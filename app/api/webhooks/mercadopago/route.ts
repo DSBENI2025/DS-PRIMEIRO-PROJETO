@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { syncBookingPayment } from "@/lib/booking-payment-sync";
 import {
   getPreApprovalClient,
   WebhookSignatureValidator,
@@ -13,11 +14,13 @@ export async function POST(req: NextRequest) {
       throw new Error("Webhook secret não configurado.");
     }
 
+    const body = await req.json().catch(() => ({}));
     const url = new URL(req.url);
+
     const dataId =
       url.searchParams.get("data.id") ||
       url.searchParams.get("data_id") ||
-      "";
+      String(body?.data?.id || "");
 
     const xSignature = req.headers.get("x-signature") || "";
     const xRequestId = req.headers.get("x-request-id") || "";
@@ -29,7 +32,6 @@ export async function POST(req: NextRequest) {
       secret,
     });
 
-    const body = await req.json().catch(() => ({}));
     const topic =
       body.type ||
       url.searchParams.get("type") ||
@@ -50,6 +52,10 @@ export async function POST(req: NextRequest) {
         .eq("provider_subscription_id", subscription.id);
 
       if (error) throw error;
+    }
+
+    if (topic === "payment" && dataId) {
+      await syncBookingPayment(dataId);
     }
 
     return NextResponse.json({ ok: true });
