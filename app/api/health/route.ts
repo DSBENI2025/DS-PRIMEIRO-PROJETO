@@ -19,6 +19,7 @@ const schemaChecks = [
   ["appointment_access_tokens", "id"],
   ["appointment_history", "id"],
   ["rate_limit_buckets", "key_hash"],
+  ["webhook_events", "id"],
 ] as const;
 
 export async function GET() {
