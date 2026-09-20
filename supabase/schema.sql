@@ -520,3 +520,40 @@ grant select, insert, update, delete on public.services to service_role;
 grant select, insert, update, delete on public.professionals to service_role;
 grant select, insert, update, delete on public.business_hours to service_role;
 grant select, insert, update, delete on public.appointments to service_role;
+
+alter table public.oauth_states
+  add column if not exists code_verifier_encrypted text;
+
+create table if not exists public.mercadopago_integrations (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null unique references public.businesses(id) on delete cascade,
+  seller_user_id text,
+  access_token_encrypted text not null,
+  refresh_token_encrypted text not null,
+  expires_at timestamptz not null,
+  scope text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.mercadopago_integrations enable row level security;
+
+revoke all on public.mercadopago_integrations from anon, authenticated;
+grant select, insert, update, delete on public.mercadopago_integrations to service_role;
+
+drop policy if exists "appointments_owner_update" on public.appointments;
+create policy "appointments_owner_update"
+on public.appointments for update
+to authenticated
+using (
+  exists (
+    select 1 from public.businesses b
+    where b.id = appointments.business_id and b.owner_id = (select auth.uid())
+  )
+)
+with check (
+  exists (
+    select 1 from public.businesses b
+    where b.id = appointments.business_id and b.owner_id = (select auth.uid())
+  )
+);
