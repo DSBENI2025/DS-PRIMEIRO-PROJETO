@@ -106,37 +106,40 @@ export async function syncBookingPayment(paymentId: string) {
   }
 
   try {
-    await recordAppointmentEvent({
-      appointmentId: String(appointmentId),
-      businessId: bookingPayment.business_id,
-      eventType: "created",
-      actorType: "customer",
-      eventKey: "created:" + String(appointmentId),
-      metadata: {
-        source: "pix",
-        providerPaymentId,
-        bookingPaymentId: bookingPayment.id,
-      },
-    });
-  } catch (error) {
-    console.error("Pagamento aprovado, mas auditoria falhou", error);
-  }
-
-  try {
     const { data: accessAppointment } = await supabase
       .from("appointments")
-      .select("end_time")
+      .select("service_id,professional_id,start_time,end_time")
       .eq("id", appointmentId)
       .single();
 
-    if (accessAppointment?.end_time) {
+    if (accessAppointment) {
+      await recordAppointmentEvent({
+        appointmentId: String(appointmentId),
+        businessId: bookingPayment.business_id,
+        eventType: "created",
+        actorType: "customer",
+        eventKey: "created:" + String(appointmentId),
+        metadata: {
+          source: "pix",
+          providerPaymentId,
+          bookingPaymentId: bookingPayment.id,
+          serviceId: accessAppointment.service_id,
+          professionalId: accessAppointment.professional_id,
+          startTime: accessAppointment.start_time,
+          endTime: accessAppointment.end_time,
+        },
+      });
+
       await ensureAppointmentAccessToken(
         String(appointmentId),
         accessAppointment.end_time
       );
     }
   } catch (error) {
-    console.error("Pagamento aprovado, mas link do cliente falhou", error);
+    console.error(
+      "Pagamento aprovado, mas auditoria/link do cliente falhou",
+      error
+    );
   }
 
   try {
