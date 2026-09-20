@@ -4,6 +4,7 @@ import {
   getEffectiveGoogleIntegrationId,
 } from "@/lib/google-calendar";
 import { ensureAppointmentAccessToken } from "@/lib/customer-appointment-access";
+import { recordAppointmentEvent } from "@/lib/appointment-history";
 import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { notifyBookingConfirmed } from "@/lib/notifications";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -102,6 +103,23 @@ export async function syncBookingPayment(paymentId: string) {
 
   if (!appointmentId) {
     return { handled: true, status: "approved" as const };
+  }
+
+  try {
+    await recordAppointmentEvent({
+      appointmentId: String(appointmentId),
+      businessId: bookingPayment.business_id,
+      eventType: "created",
+      actorType: "customer",
+      eventKey: "created:" + String(appointmentId),
+      metadata: {
+        source: "pix",
+        providerPaymentId,
+        bookingPaymentId: bookingPayment.id,
+      },
+    });
+  } catch (error) {
+    console.error("Pagamento aprovado, mas auditoria falhou", error);
   }
 
   try {
