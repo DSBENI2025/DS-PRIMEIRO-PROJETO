@@ -6,10 +6,12 @@ import {
 } from "crypto";
 
 function key() {
-  const secret = process.env.GOOGLE_TOKEN_ENCRYPTION_KEY;
+  const secret =
+    process.env.TOKEN_ENCRYPTION_KEY ||
+    process.env.GOOGLE_TOKEN_ENCRYPTION_KEY;
 
   if (!secret || secret.length < 32) {
-    throw new Error("GOOGLE_TOKEN_ENCRYPTION_KEY deve ter pelo menos 32 caracteres.");
+    throw new Error("TOKEN_ENCRYPTION_KEY deve ter pelo menos 32 caracteres.");
   }
 
   return createHash("sha256").update(secret).digest();
