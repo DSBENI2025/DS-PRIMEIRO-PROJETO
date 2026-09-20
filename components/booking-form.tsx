@@ -388,6 +388,16 @@ export default function BookingForm({
           confirmação, lembrete e aviso de pagamento.
         </label>
 
+        <label className="toggle-row consent-row">
+          <input
+            type="checkbox"
+            checked={whatsappOptIn}
+            disabled={formLocked}
+            onChange={(e) => setWhatsappOptIn(e.target.checked)}
+          />
+          Quero receber no WhatsApp mensagens sobre este agendamento, como confirmação, lembrete e aviso de pagamento.
+        </label>
+
         <input
           className="input"
           type="email"
