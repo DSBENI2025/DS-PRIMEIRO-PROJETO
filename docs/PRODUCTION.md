@@ -15,6 +15,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 7. `supabase/migrations/20260920_000007_customer_self_service.sql`
 8. `supabase/migrations/20260920_000008_appointment_history.sql`
 9. `supabase/migrations/20260920_000009_appointment_price_snapshot.sql`
+10. `supabase/migrations/20260920_000010_public_rate_limits.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -32,6 +33,7 @@ Configure no ambiente de produção:
 - `MERCADO_PAGO_WEBHOOK_SECRET`
 - `MERCADO_PAGO_PLAN_ID`
 - `TOKEN_ENCRYPTION_KEY`
+- `RATE_LIMIT_SECRET`
 
 `TOKEN_ENCRYPTION_KEY` deve ter pelo menos 32 caracteres e nunca deve ser trocada sem um plano de rotação dos tokens criptografados existentes.
 
@@ -129,7 +131,9 @@ O endpoint não expõe tokens nem valores secretos.
 34. exportar CSV em 7, 30 e 90 dias e abrir o arquivo em uma planilha
 35. validar que profissional não consegue exportar relatório global
 36. criar um atendimento, alterar o preço do serviço e confirmar que relatório/CSV mantêm o valor original
-37. consultar `/api/health`
+37. validar respostas HTTP 429 após exceder os limites dos endpoints públicos
+38. confirmar cabeçalho `Retry-After` nas respostas limitadas
+39. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 
