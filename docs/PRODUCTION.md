@@ -16,6 +16,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 8. `supabase/migrations/20260920_000008_appointment_history.sql`
 9. `supabase/migrations/20260920_000009_appointment_price_snapshot.sql`
 10. `supabase/migrations/20260920_000010_public_rate_limits.sql`
+11. `supabase/migrations/20260920_000011_webhook_events.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -119,21 +120,23 @@ O endpoint não expõe tokens nem valores secretos.
 22. testar conflito com evento existente no Google Agenda
 23. testar cancelamento
 24. testar Pix de sinal
-25. validar webhook
-26. validar WhatsApp com consentimento
-27. abrir relatórios
-28. concluir um agendamento e abrir o link "Gerenciar meu agendamento"
-29. reagendar pelo link do cliente e validar conflitos/Google
-30. cancelar pelo link e validar liberação do horário
-31. testar o mesmo fluxo após aprovação Pix
-32. abrir o histórico de um atendimento e validar criação/reagendamento/cancelamento/status
-33. validar que profissional só acessa histórico dos próprios atendimentos
-34. exportar CSV em 7, 30 e 90 dias e abrir o arquivo em uma planilha
-35. validar que profissional não consegue exportar relatório global
-36. criar um atendimento, alterar o preço do serviço e confirmar que relatório/CSV mantêm o valor original
-37. validar respostas HTTP 429 após exceder os limites dos endpoints públicos
-38. confirmar cabeçalho `Retry-After` nas respostas limitadas
-39. consultar `/api/health`
+25. validar webhook e confirmar registro em `webhook_events`
+26. reenviar a mesma entrega e confirmar resposta 200 sem duplicar efeitos
+27. simular erro interno e confirmar HTTP 500 para permitir retry
+28. validar WhatsApp com consentimento
+29. abrir relatórios
+30. concluir um agendamento e abrir o link "Gerenciar meu agendamento"
+31. reagendar pelo link do cliente e validar conflitos/Google
+32. cancelar pelo link e validar liberação do horário
+33. testar o mesmo fluxo após aprovação Pix
+34. abrir o histórico de um atendimento e validar criação/reagendamento/cancelamento/status
+35. validar que profissional só acessa histórico dos próprios atendimentos
+36. exportar CSV em 7, 30 e 90 dias e abrir o arquivo em uma planilha
+37. validar que profissional não consegue exportar relatório global
+38. criar um atendimento, alterar o preço do serviço e confirmar que relatório/CSV mantêm o valor original
+39. validar respostas HTTP 429 após exceder os limites dos endpoints públicos
+40. confirmar cabeçalho `Retry-After` nas respostas limitadas
+41. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 
