@@ -3,6 +3,7 @@ import {
   createGoogleCalendarEvent,
   getEffectiveGoogleIntegrationId,
 } from "@/lib/google-calendar";
+import { ensureAppointmentAccessToken } from "@/lib/customer-appointment-access";
 import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { notifyBookingConfirmed } from "@/lib/notifications";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -101,6 +102,23 @@ export async function syncBookingPayment(paymentId: string) {
 
   if (!appointmentId) {
     return { handled: true, status: "approved" as const };
+  }
+
+  try {
+    const { data: accessAppointment } = await supabase
+      .from("appointments")
+      .select("end_time")
+      .eq("id", appointmentId)
+      .single();
+
+    if (accessAppointment?.end_time) {
+      await ensureAppointmentAccessToken(
+        String(appointmentId),
+        accessAppointment.end_time
+      );
+    }
+  } catch (error) {
+    console.error("Pagamento aprovado, mas link do cliente falhou", error);
   }
 
   try {
