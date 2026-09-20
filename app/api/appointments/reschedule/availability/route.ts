@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     const { data: appointment } = await supabase
       .from("appointments")
       .select(
-        "id,business_id,professional_id,service_id,start_time,end_time,status,google_event_id,services(duration_minutes)"
+        "id,business_id,professional_id,service_id,start_time,end_time,status,google_event_id,google_integration_id,services(duration_minutes)"
       )
       .eq("id", appointmentId)
       .eq("business_id", auth.business.id)
@@ -177,7 +177,8 @@ export async function GET(req: NextRequest) {
         dayStart.toISOString(),
         dayEnd.toISOString(),
         professionalId,
-        appointment.google_event_id
+        appointment.google_event_id,
+        appointment.google_integration_id
       );
     } catch (error) {
       googleChecked = false;
