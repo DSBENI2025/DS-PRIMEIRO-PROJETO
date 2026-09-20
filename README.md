@@ -13,6 +13,7 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - convites seguros por link
 - horários gerais do estabelecimento
 - horários individuais por profissional, com fallback para o horário geral
+- bloqueios de almoço, folgas, compromissos e férias
 - página pública em `/agendar/[slug]`
 - criação de agendamento sem login do cliente final
 - disponibilidade pública em tempo real
@@ -157,7 +158,7 @@ Os lembretes são processados pelo workflow `.github/workflows/notifications.yml
 
 ## Próximos blocos
 
-- bloqueios manuais, férias e intervalos
+- reagendamento de atendimentos
 - reembolso automático quando aplicável
 - exportação de relatórios
 - plano anual
