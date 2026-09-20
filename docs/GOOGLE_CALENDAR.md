@@ -63,6 +63,8 @@ Access tokens expirados são renovados usando o refresh token.
 
 Ao renovar, somente o registro específico daquela conexão é atualizado.
 
+Ao desconectar uma agenda no Agenda Pro, a credencial local é apagada. O grant global da conta Google não é revogado automaticamente, evitando derrubar outras conexões da mesma conta. Se o usuário quiser revogar totalmente o acesso, deve fazê-lo também nas permissões da própria Conta Google.
+
 ## 7. Migração
 
 Para habilitar calendários individuais aplique:
