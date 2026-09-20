@@ -2,8 +2,6 @@ const groups = {
   core: [
     "NEXT_PUBLIC_APP_URL",
     "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "SUPABASE_SERVICE_ROLE_KEY",
     "MERCADO_PAGO_ACCESS_TOKEN",
     "MERCADO_PAGO_WEBHOOK_SECRET",
     "MERCADO_PAGO_PLAN_ID",
@@ -32,6 +30,19 @@ const groups = {
 
 type GroupName = keyof typeof groups;
 
+const alternatives: Record<GroupName, readonly (readonly string[])[]> = {
+  core: [
+    [
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    ],
+    ["SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+  ],
+  googleCalendar: [],
+  mercadoPagoSeller: [],
+  whatsapp: [],
+};
+
 function present(name: string) {
   return Boolean(process.env[name]?.trim());
 }
@@ -47,6 +58,13 @@ export function getEnvironmentStatus() {
     readonly string[],
   ][]) {
     const missing = variables.filter((name) => !present(name));
+
+    for (const options of alternatives[group]) {
+      if (!options.some((name) => present(name))) {
+        missing.push(options.join("|"));
+      }
+    }
+
     status[group] = {
       configured: missing.length === 0,
       missing,
