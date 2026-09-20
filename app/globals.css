@@ -32,3 +32,16 @@ p { color: #555; line-height: 1.55; }
   .grid-2 { grid-template-columns: 1fr; }
   .row.between { align-items: flex-start; }
 }
+
+.hero { max-width: 760px; margin: 20px auto; }
+.actions { margin-top: 20px; flex-wrap: wrap; }
+.actions .cta { text-decoration: none; }
+.secondary { text-decoration: none; color: #111; display: inline-block; }
+.danger-link { margin-top: 8px; width: fit-content; border: 0; background: transparent; color: #a11; padding: 0; cursor: pointer; text-decoration: underline; }
+.schedule-row { display: grid; grid-template-columns: 130px 100px 130px 30px 130px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+.compact { margin: 0; }
+.closed-toggle { font-size: 14px; color: #555; }
+@media (max-width: 760px) {
+  .schedule-row { grid-template-columns: 1fr 1fr; }
+  .schedule-row span { display: none; }
+}
