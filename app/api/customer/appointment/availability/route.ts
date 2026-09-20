@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAppointmentAccessByToken } from "@/lib/customer-appointment-access";
+import { businessHasActiveSubscription } from "@/lib/business-access";
 import { getEffectiveWorkingHours } from "@/lib/availability-server";
 import { getGoogleCalendarBusyIntervalsExceptEvent } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -70,6 +71,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         { error: "Agendamento não disponível para reagendamento." },
         { status: 409 }
+      );
+    }
+
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("id,owner_id,active")
+      .eq("id", appointment.business_id)
+      .maybeSingle();
+
+    if (
+      !business?.active ||
+      !(await businessHasActiveSubscription(
+        appointment.business_id,
+        business.owner_id
+      ))
+    ) {
+      return NextResponse.json(
+        { error: "A agenda online está temporariamente indisponível." },
+        { status: 403 }
       );
     }
 
