@@ -63,8 +63,10 @@ Crie as variáveis a partir de `.env.example`:
 
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (preferencial)
+- `SUPABASE_SECRET_KEY` (preferencial, somente servidor)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (compatibilidade legada)
+- `SUPABASE_SERVICE_ROLE_KEY` (compatibilidade legada, somente servidor)
 - `MERCADO_PAGO_ACCESS_TOKEN`
 - `MERCADO_PAGO_WEBHOOK_SECRET`
 - `MERCADO_PAGO_PLAN_ID`
@@ -83,6 +85,7 @@ Crie as variáveis a partir de `.env.example`:
 - `WHATSAPP_TEMPLATE_REMINDER`
 - `WHATSAPP_TEMPLATE_FOLLOWUP`
 - `NOTIFICATION_CRON_SECRET`
+- `RATE_LIMIT_SECRET`
 
 Nunca publique valores reais dessas credenciais no repositório.
 
@@ -90,13 +93,15 @@ Nunca publique valores reais dessas credenciais no repositório.
 
 Checklist completo em `docs/PRODUCTION.md`.
 
+Migrations do Supabase via GitHub Actions: `docs/SUPABASE_DEPLOY.md`.
+
 Deploy pela Vercel via GitHub Actions: `docs/VERCEL_DEPLOY.md`.
 
 Health check: `GET /api/health`.
 
 ## Supabase
 
-Para ambiente novo, aplique `supabase/migrations/20260920_000001_baseline.sql`. `supabase/schema.sql` permanece como referência consolidada.
+As migrations são a fonte de verdade do banco e podem ser aplicadas pelo workflow `.github/workflows/deploy-database.yml`. `supabase/schema.sql` permanece como referência consolidada.
 
 No Supabase Auth, habilite Email/Password. Em produção, configure a Site URL para o domínio real.
 
