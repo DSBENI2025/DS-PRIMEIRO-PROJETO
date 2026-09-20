@@ -94,21 +94,23 @@ O endpoint não expõe tokens nem valores secretos.
 4. ativar uma assinatura de teste
 5. cadastrar serviço e profissional
 6. configurar horários gerais
-7. configurar pelo menos um profissional com horário individual e validar o fallback
+7. configurar um profissional com horário individual e validar o fallback
 8. conectar o Google Agenda geral
 9. conectar um Google Agenda próprio em pelo menos um profissional
 10. validar fallback do Google Agenda em outro profissional
-11. criar um convite de profissional, aceitar com outra conta e validar que ela só vê a própria agenda
-12. criar um convite de administrador e validar as permissões gerenciais
+11. criar um convite de profissional e validar acesso somente à própria agenda
+12. criar um convite de administrador e validar permissões gerenciais
 13. abrir o link público
-12. criar agendamento
-13. testar conflito de horário
-14. testar cancelamento
-15. testar Pix de sinal
-16. validar webhook
-17. validar WhatsApp com consentimento
-18. abrir relatórios
-19. consultar `/api/health`
+14. escolher serviço, profissional e data e conferir se horários ocupados não aparecem
+15. criar um agendamento sem Pix e confirmar que o slot some
+16. gerar uma pré-reserva Pix e confirmar que o slot fica indisponível
+17. testar conflito com evento existente no Google Agenda
+18. testar cancelamento
+19. testar Pix de sinal
+20. validar webhook
+21. validar WhatsApp com consentimento
+22. abrir relatórios
+23. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 
