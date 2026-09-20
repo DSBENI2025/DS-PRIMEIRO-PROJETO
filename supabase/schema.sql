@@ -1571,9 +1571,7 @@ begin
   v_window_end := v_window_start + make_interval(secs => p_window_seconds);
 
   delete from public.rate_limit_buckets
-  where key_hash = p_key_hash
-    and action = p_action
-    and expires_at < v_now;
+  where expires_at < v_now;
 
   insert into public.rate_limit_buckets (
     key_hash,
