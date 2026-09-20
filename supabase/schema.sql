@@ -221,7 +221,7 @@ alter table public.calendar_integrations enable row level security;
 create extension if not exists btree_gist;
 
 alter table public.businesses
-  add column if not exists deposit_enabled boolean not null default true,
+  add column if not exists deposit_enabled boolean not null default false,
   add column if not exists deposit_percent integer not null default 50;
 
 do $$
