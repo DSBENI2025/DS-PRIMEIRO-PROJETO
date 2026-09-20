@@ -1348,6 +1348,17 @@ begin
     end_time = p_end_time
   where id = v_appointment.id;
 
+  if v_appointment.booking_payment_id is not null then
+    update public.booking_payments
+    set
+      professional_id = p_professional_id,
+      start_time = p_start_time,
+      end_time = p_end_time,
+      updated_at = now()
+    where id = v_appointment.booking_payment_id
+      and status = 'approved';
+  end if;
+
   return v_appointment.id;
 end;
 $$;
