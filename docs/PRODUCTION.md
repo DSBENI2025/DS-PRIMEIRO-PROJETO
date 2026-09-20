@@ -4,9 +4,10 @@ Este checklist prepara uma instalação real do Agenda Pro.
 
 ## 1. Banco de dados
 
-Para um projeto Supabase novo, aplique a migration:
+Para um projeto Supabase novo, aplique as migrations em ordem:
 
-`supabase/migrations/20260920_000001_baseline.sql`
+1. `supabase/migrations/20260920_000001_baseline.sql`
+2. `supabase/migrations/20260920_000002_professional_hours.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -90,8 +91,9 @@ O endpoint não expõe tokens nem valores secretos.
 3. concluir onboarding
 4. ativar uma assinatura de teste
 5. cadastrar serviço e profissional
-6. configurar horários
-7. abrir o link público
+6. configurar horários gerais
+7. configurar pelo menos um profissional com horário individual e validar o fallback
+8. abrir o link público
 8. criar agendamento
 9. testar conflito de horário
 10. testar cancelamento
