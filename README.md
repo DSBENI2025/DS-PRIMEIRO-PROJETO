@@ -23,6 +23,12 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - conexão OAuth com Google Agenda
 - consulta de disponibilidade no Google Agenda
 - criação e remoção automática de eventos no Google Agenda
+- WhatsApp transacional com consentimento explícito
+- aviso de Pix pendente
+- confirmação automática do agendamento
+- lembrete programável por estabelecimento
+- pós-atendimento após conclusão
+- logs idempotentes de notificações
 - conexão Mercado Pago por estabelecimento via OAuth + PKCE
 - sinal Pix configurável por negócio
 - pré-reserva do horário por 30 minutos
@@ -54,6 +60,15 @@ Crie as variáveis a partir de `.env.example`:
 - `MERCADO_PAGO_CLIENT_ID`
 - `MERCADO_PAGO_CLIENT_SECRET`
 - `TOKEN_ENCRYPTION_KEY`
+- `WHATSAPP_GRAPH_VERSION`
+- `WHATSAPP_PHONE_NUMBER_ID`
+- `WHATSAPP_ACCESS_TOKEN`
+- `WHATSAPP_TEMPLATE_LANGUAGE`
+- `WHATSAPP_TEMPLATE_PIX_PENDING`
+- `WHATSAPP_TEMPLATE_BOOKING_CONFIRMED`
+- `WHATSAPP_TEMPLATE_REMINDER`
+- `WHATSAPP_TEMPLATE_FOLLOWUP`
+- `NOTIFICATION_CRON_SECRET`
 
 Nunca publique valores reais dessas credenciais no repositório.
 
@@ -107,6 +122,14 @@ Com o sinal ativo:
 4. o webhook confirma o pagamento;
 5. o agendamento definitivo é criado;
 6. o evento é sincronizado com o Google Agenda, quando conectado.
+
+## WhatsApp
+
+A configuração detalhada está em `docs/WHATSAPP.md`.
+
+As mensagens usam templates previamente aprovados na WhatsApp Business Platform. O cliente precisa consentir no formulário de agendamento para receber mensagens automáticas.
+
+Os lembretes são processados pelo workflow `.github/workflows/notifications.yml`, que roda a cada 5 minutos e chama um endpoint protegido por segredo.
 
 ## Fluxo do usuário
 
