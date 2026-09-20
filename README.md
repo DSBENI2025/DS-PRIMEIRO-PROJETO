@@ -15,6 +15,8 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - horários individuais por profissional, com fallback para o horário geral
 - página pública em `/agendar/[slug]`
 - criação de agendamento sem login do cliente final
+- disponibilidade pública em tempo real
+- slots livres considerando Agenda Pro, Pix e Google Agenda
 - prevenção de conflito de horário por profissional
 - painel com próximos agendamentos
 - cancelamento de agendamento
@@ -155,7 +157,6 @@ Os lembretes são processados pelo workflow `.github/workflows/notifications.yml
 
 ## Próximos blocos
 
-- disponibilidade pública em tempo real
 - bloqueios manuais, férias e intervalos
 - reembolso automático quando aplicável
 - exportação de relatórios
