@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedBusiness } from "@/lib/auth-server";
 import { getEffectiveWorkingHours } from "@/lib/availability-server";
-import { isGoogleCalendarBusyExceptEvent } from "@/lib/google-calendar";
+import { getGoogleCalendarBusyIntervalsExceptEvent } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 function toMinutes(value: string) {
@@ -169,6 +169,23 @@ export async function GET(req: NextRequest) {
     const blocks = blocksResult.data || [];
     const slots: string[] = [];
     let googleChecked = true;
+    let googleBusy: { start: string; end: string }[] = [];
+
+    try {
+      googleBusy = await getGoogleCalendarBusyIntervalsExceptEvent(
+        auth.business.id,
+        dayStart.toISOString(),
+        dayEnd.toISOString(),
+        professionalId,
+        appointment.google_event_id
+      );
+    } catch (error) {
+      googleChecked = false;
+      console.error(
+        "Falha ao consultar Google para reagendamento",
+        error
+      );
+    }
 
     for (
       let value = openMinutes;
@@ -194,23 +211,11 @@ export async function GET(req: NextRequest) {
 
       if (internalBusy) continue;
 
-      try {
-        const googleBusy = await isGoogleCalendarBusyExceptEvent(
-          auth.business.id,
-          start.toISOString(),
-          end.toISOString(),
-          professionalId,
-          appointment.google_event_id
-        );
+      const externalBusy = googleBusy.some((item) =>
+        overlaps(start, end, item.start, item.end)
+      );
 
-        if (googleBusy) continue;
-      } catch (error) {
-        googleChecked = false;
-        console.error(
-          "Falha ao consultar Google para reagendamento",
-          error
-        );
-      }
+      if (externalBusy) continue;
 
       slots.push(time);
     }
