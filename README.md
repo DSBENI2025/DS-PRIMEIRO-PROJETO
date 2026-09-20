@@ -21,8 +21,9 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - bloqueio do painel e da agenda pública sem assinatura `authorized`
 - RLS no Supabase
 - CI no GitHub Actions
-- conexão OAuth com Google Agenda
-- consulta de disponibilidade no Google Agenda
+- conexão OAuth com Google Agenda geral
+- Google Agenda individual por profissional, com fallback para o geral
+- consulta de disponibilidade no Google Agenda efetivo
 - criação e remoção automática de eventos no Google Agenda
 - WhatsApp transacional com consentimento explícito
 - aviso de Pix pendente
@@ -152,9 +153,8 @@ Os lembretes são processados pelo workflow `.github/workflows/notifications.yml
 
 ## Próximos blocos
 
-- vincular um Google Agenda diferente por profissional
-- lembretes por WhatsApp
+- mais de um usuário administrador por negócio
+- permissões para equipe
 - reembolso automático quando aplicável
-- mais de um usuário administrador
-- relatórios mensais
+- exportação de relatórios
 - plano anual
