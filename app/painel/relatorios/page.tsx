@@ -32,6 +32,7 @@ export default function ReportsPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   async function load(selectedDays = days) {
     setLoading(true);
@@ -77,6 +78,58 @@ export default function ReportsPage() {
     load(days);
   }, [days]);
 
+  async function exportCsv() {
+    setExporting(true);
+    setMessage("");
+
+    try {
+      const supabase = getSupabaseBrowser();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch(
+        "/api/reports/export?days=" + days,
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Não foi possível exportar o relatório.");
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition") || "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename =
+        match?.[1] || "agenda-pro-relatorio-" + days + "-dias.csv";
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Erro inesperado."
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const maxDailyRevenue = useMemo(
     () =>
       Math.max(
@@ -97,16 +150,26 @@ export default function ReportsPage() {
         <a className="secondary" href="/painel">Voltar ao painel</a>
       </div>
 
-      <div className="period-tabs">
-        {[7, 30, 90].map((value) => (
-          <button
-            key={value}
-            className={days === value ? "period-tab active" : "period-tab"}
-            onClick={() => setDays(value)}
-          >
-            {value} dias
-          </button>
-        ))}
+      <div className="reports-toolbar">
+        <div className="period-tabs">
+          {[7, 30, 90].map((value) => (
+            <button
+              key={value}
+              className={days === value ? "period-tab active" : "period-tab"}
+              onClick={() => setDays(value)}
+            >
+              {value} dias
+            </button>
+          ))}
+        </div>
+
+        <button
+          className="secondary"
+          disabled={exporting || loading}
+          onClick={exportCsv}
+        >
+          {exporting ? "Exportando..." : "Exportar CSV"}
+        </button>
       </div>
 
       {loading && <div className="card">Carregando relatório...</div>}
