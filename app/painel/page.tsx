@@ -271,6 +271,11 @@ export default function PainelPage() {
   async function saveDepositSettings() {
     if (!business) return;
 
+    if (depositEnabled && !mercadoPagoConnected) {
+      setMessage("Conecte o Mercado Pago antes de ativar o sinal Pix.");
+      return;
+    }
+
     if (depositPercent < 10 || depositPercent > 100) {
       setMessage("O percentual do sinal deve ficar entre 10% e 100%.");
       return;
