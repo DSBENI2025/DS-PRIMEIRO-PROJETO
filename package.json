@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "check:env": "node scripts/check-env.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",

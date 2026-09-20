@@ -9,6 +9,30 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      MERCADO_PAGO_ACCESS_TOKEN: TEST_TOKEN
+      MERCADO_PAGO_WEBHOOK_SECRET: TEST_SECRET
+      MERCADO_PAGO_PLAN_ID: TEST_PLAN
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: TEST_ANON_KEY
+      SUPABASE_SERVICE_ROLE_KEY: TEST_SERVICE_ROLE
+      GOOGLE_CLIENT_ID: TEST_GOOGLE_CLIENT_ID
+      GOOGLE_CLIENT_SECRET: TEST_GOOGLE_CLIENT_SECRET
+      GOOGLE_TOKEN_ENCRYPTION_KEY: test-encryption-key-32-characters-minimum
+      TOKEN_ENCRYPTION_KEY: test-server-encryption-key-32-characters-minimum
+      MERCADO_PAGO_CLIENT_ID: TEST_MP_CLIENT_ID
+      MERCADO_PAGO_CLIENT_SECRET: TEST_MP_CLIENT_SECRET
+      WHATSAPP_GRAPH_VERSION: v99.0
+      WHATSAPP_PHONE_NUMBER_ID: TEST_PHONE_NUMBER_ID
+      WHATSAPP_ACCESS_TOKEN: TEST_WHATSAPP_TOKEN
+      WHATSAPP_TEMPLATE_LANGUAGE: pt_BR
+      WHATSAPP_TEMPLATE_PIX_PENDING: test_pix_pending
+      WHATSAPP_TEMPLATE_BOOKING_CONFIRMED: test_booking_confirmed
+      WHATSAPP_TEMPLATE_REMINDER: test_reminder
+      WHATSAPP_TEMPLATE_FOLLOWUP: test_followup
+      NOTIFICATION_CRON_SECRET: test-cron-secret
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,35 +43,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install
         run: npm ci
+
+      - name: Validate environment
+        run: npm run check:env
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
       - name: Build
         run: npm run build
-        env:
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
-          MERCADO_PAGO_ACCESS_TOKEN: TEST_TOKEN
-          MERCADO_PAGO_WEBHOOK_SECRET: TEST_SECRET
-          MERCADO_PAGO_PLAN_ID: TEST_PLAN
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: TEST_ANON_KEY
-          SUPABASE_SERVICE_ROLE_KEY: TEST_SERVICE_ROLE
-          GOOGLE_CLIENT_ID: TEST_GOOGLE_CLIENT_ID
-          GOOGLE_CLIENT_SECRET: TEST_GOOGLE_CLIENT_SECRET
-          GOOGLE_TOKEN_ENCRYPTION_KEY: test-encryption-key-32-characters-minimum
-          TOKEN_ENCRYPTION_KEY: test-server-encryption-key-32-characters-minimum
-          MERCADO_PAGO_CLIENT_ID: TEST_MP_CLIENT_ID
-          MERCADO_PAGO_CLIENT_SECRET: TEST_MP_CLIENT_SECRET
-          WHATSAPP_GRAPH_VERSION: v99.0
-          WHATSAPP_PHONE_NUMBER_ID: TEST_PHONE_NUMBER_ID
-          WHATSAPP_ACCESS_TOKEN: TEST_WHATSAPP_TOKEN
-          WHATSAPP_TEMPLATE_LANGUAGE: pt_BR
-          WHATSAPP_TEMPLATE_PIX_PENDING: test_pix_pending
-          WHATSAPP_TEMPLATE_BOOKING_CONFIRMED: test_booking_confirmed
-          WHATSAPP_TEMPLATE_REMINDER: test_reminder
-          WHATSAPP_TEMPLATE_FOLLOWUP: test_followup
-          NOTIFICATION_CRON_SECRET: test-cron-secret

@@ -36,7 +36,7 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 
 ## Stack
 
-- Next.js 15
+- Next.js 16
 - React 19
 - TypeScript
 - Supabase Auth + PostgreSQL
@@ -72,9 +72,15 @@ Crie as variáveis a partir de `.env.example`:
 
 Nunca publique valores reais dessas credenciais no repositório.
 
+## Produção
+
+Checklist completo em `docs/PRODUCTION.md`.
+
+Health check: `GET /api/health`.
+
 ## Supabase
 
-Execute `supabase/schema.sql` no SQL Editor do projeto Supabase.
+Para ambiente novo, aplique `supabase/migrations/20260920_000001_baseline.sql`. `supabase/schema.sql` permanece como referência consolidada.
 
 No Supabase Auth, habilite Email/Password. Em produção, configure a Site URL para o domínio real.
 
