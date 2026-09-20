@@ -166,8 +166,9 @@ Use o GitHub Environment `production` e não reutilize credenciais sensíveis de
 3. Execute **Deploy Supabase migrations**.
 4. Confirme que `supabase migration list` terminou sem erro.
 5. Execute **Deploy production to Vercel**.
-6. O deploy consulta `/api/health` e falha se o schema estiver incompleto.
-7. Execute o checklist pós-deploy.
+6. O workflow valida health JSON, páginas públicas e headers de segurança.
+7. Só considere o release concluído se os smoke tests pós-deploy passarem.
+8. Execute o checklist funcional pós-deploy.
 
 ## 10. Regra de release
 
