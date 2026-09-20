@@ -457,6 +457,16 @@ export default function PainelPage() {
           <section className="card">
             <div className="row between">
               <div>
+                <h2>Relatórios do negócio</h2>
+                <p>Acompanhe agendamentos, receita prevista, sinais Pix, ticket médio e desempenho dos profissionais.</p>
+              </div>
+              <a className="cta" href="/painel/relatorios">Abrir relatórios</a>
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="row between">
+              <div>
                 <h2>Seu link de agendamento</h2>
                 <div className="public-link">{publicUrl}</div>
               </div>
