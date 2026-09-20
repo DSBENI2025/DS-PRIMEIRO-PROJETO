@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { createGoogleCalendarEvent } from "@/lib/google-calendar";
 import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
+import { notifyBookingConfirmed } from "@/lib/notifications";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type PaymentStatus =
@@ -97,6 +98,12 @@ export async function syncBookingPayment(paymentId: string) {
 
   if (!appointmentId) {
     return { handled: true, status: "approved" as const };
+  }
+
+  try {
+    await notifyBookingConfirmed(String(appointmentId));
+  } catch (error) {
+    console.error("Pagamento aprovado, mas confirmação WhatsApp falhou", error);
   }
 
   const marker = "syncing:" + randomUUID();
