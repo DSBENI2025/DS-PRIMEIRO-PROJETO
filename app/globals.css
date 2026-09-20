@@ -129,3 +129,9 @@ p { color: #555; line-height: 1.55; }
 .timeline-content p { margin: 0; }
 .timeline-meta { color: #666; font-size: 13px; }
 .timeline-change { display: grid; gap: 4px; padding: 10px 12px; background: #f7f7f8; border-radius: 10px; font-size: 14px; }
+
+.reports-toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 20px; }
+.reports-toolbar .period-tabs { margin-bottom: 0; }
+@media (max-width: 620px) {
+  .reports-toolbar { flex-direction: column; }
+}
