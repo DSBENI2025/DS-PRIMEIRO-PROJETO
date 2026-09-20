@@ -3,6 +3,7 @@ import { getEffectiveWorkingHours } from "@/lib/availability-server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
 import { getGoogleCalendarBusyIntervals } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { consumeRateLimit, rateLimitExceeded } from "@/lib/rate-limit";
 
 function toMinutes(value: string) {
   const [hours, minutes] = value.slice(0, 5).split(":").map(Number);
@@ -31,6 +32,12 @@ function overlaps(
 
 export async function GET(req: NextRequest) {
   try {
+    const rateLimit = await consumeRateLimit(req, "availability", 120, 600);
+
+    if (!rateLimit.allowed) {
+      return rateLimitExceeded(rateLimit);
+    }
+
     const businessId = req.nextUrl.searchParams.get("businessId") || "";
     const serviceId = req.nextUrl.searchParams.get("serviceId") || "";
     const professionalId =
