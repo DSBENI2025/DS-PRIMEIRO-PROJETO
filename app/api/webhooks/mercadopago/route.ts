@@ -88,6 +88,10 @@ export async function POST(req: NextRequest) {
     if (topic === "subscription_preapproval" && dataId) {
       const preApproval = getPreApprovalClient();
       const subscription = await preApproval.get({ id: dataId });
+      if (!subscription.id) {
+        throw new Error("Mercado Pago retornou assinatura sem ID.");
+      }
+
       const supabase = getSupabaseAdmin();
 
       const { error } = await supabase
