@@ -186,3 +186,34 @@ using (
     where b.id = appointments.business_id and b.owner_id = auth.uid()
   )
 );
+
+alter table public.appointments
+  add column if not exists google_event_id text;
+
+create table if not exists public.oauth_states (
+  state text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  provider text not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.calendar_integrations (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null unique references public.businesses(id) on delete cascade,
+  provider text not null default 'google',
+  access_token_encrypted text not null,
+  refresh_token_encrypted text not null,
+  expires_at timestamptz not null,
+  scope text,
+  calendar_id text not null default 'primary',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists oauth_states_expiry_idx
+on public.oauth_states (expires_at);
+
+alter table public.oauth_states enable row level security;
+alter table public.calendar_integrations enable row level security;

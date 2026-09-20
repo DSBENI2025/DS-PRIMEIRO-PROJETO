@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
+import {
+  createGoogleCalendarEvent,
+  isGoogleCalendarBusy,
+} from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 function toMinutes(value: string) {
@@ -39,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     const { data: business } = await supabase
       .from("businesses")
-      .select("id,owner_id,active,timezone")
+      .select("id,owner_id,name,active,timezone")
       .eq("id", businessId)
       .maybeSingle();
 
@@ -65,13 +69,13 @@ export async function POST(req: NextRequest) {
     const [serviceResult, professionalResult] = await Promise.all([
       supabase
         .from("services")
-        .select("id,duration_minutes,active")
+        .select("id,name,duration_minutes,active")
         .eq("id", serviceId)
         .eq("business_id", businessId)
         .maybeSingle(),
       supabase
         .from("professionals")
-        .select("id,active")
+        .select("id,name,active")
         .eq("id", professionalId)
         .eq("business_id", businessId)
         .maybeSingle(),
@@ -104,7 +108,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const end = new Date(start.getTime() + service.duration_minutes * 60 * 1000);
+    const end = new Date(
+      start.getTime() + service.duration_minutes * 60 * 1000
+    );
+
     const weekday = new Date(date + "T12:00:00-03:00").getUTCDay();
 
     const { data: hours } = await supabase
@@ -151,6 +158,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    try {
+      const googleBusy = await isGoogleCalendarBusy(
+        businessId,
+        start.toISOString(),
+        end.toISOString()
+      );
+
+      if (googleBusy) {
+        return NextResponse.json(
+          { error: "Esse horário está ocupado no Google Agenda." },
+          { status: 409 }
+        );
+      }
+    } catch (error) {
+      console.error("Falha ao validar disponibilidade no Google Agenda", error);
+    }
+
     const { data: appointment, error } = await supabase
       .from("appointments")
       .insert({
@@ -164,10 +188,37 @@ export async function POST(req: NextRequest) {
         end_time: end.toISOString(),
         status: "confirmed",
       })
-      .select("id,start_time")
+      .select("id,start_time,end_time")
       .single();
 
     if (error) throw error;
+
+    try {
+      const googleEventId = await createGoogleCalendarEvent({
+        businessId,
+        summary: service.name + " - " + customerName,
+        description:
+          "Cliente: " +
+          customerName +
+          "\nWhatsApp: " +
+          customerPhone +
+          (customerEmail ? "\nE-mail: " + customerEmail : "") +
+          "\nProfissional: " +
+          professional.name,
+        startTime: appointment.start_time,
+        endTime: appointment.end_time,
+        timeZone: business.timezone,
+      });
+
+      if (googleEventId) {
+        await supabase
+          .from("appointments")
+          .update({ google_event_id: googleEventId })
+          .eq("id", appointment.id);
+      }
+    } catch (error) {
+      console.error("Agendamento criado, mas evento Google falhou", error);
+    }
 
     return NextResponse.json({
       appointmentId: appointment.id,
