@@ -30,6 +30,7 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - cancelamento de agendamento
 - cobrança recorrente via Mercado Pago
 - webhook com validação de assinatura
+- auditoria e idempotência de entregas do webhook Mercado Pago
 - bloqueio do painel e da agenda pública sem assinatura `authorized`
 - RLS no Supabase
 - CI no GitHub Actions
