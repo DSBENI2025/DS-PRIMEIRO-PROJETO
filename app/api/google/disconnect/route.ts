@@ -11,16 +11,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const professionalId =
+      typeof body.professionalId === "string" && body.professionalId
+        ? body.professionalId
+        : null;
+
     const supabase = getSupabaseAdmin();
 
-    const { data: integration } = await supabase
-      .from("calendar_integrations")
-      .select("refresh_token_encrypted")
-      .eq("business_id", auth.business.id)
-      .eq("provider", "google")
-      .maybeSingle();
+    if (professionalId) {
+      const { data: professional } = await supabase
+        .from("professionals")
+        .select("id")
+        .eq("id", professionalId)
+        .eq("business_id", auth.business.id)
+        .maybeSingle();
 
-    if (integration?.refresh_token_encrypted) {
+      if (!professional) {
+        return NextResponse.json(
+          { error: "Profissional não encontrado." },
+          { status: 404 }
+        );
+      }
+    }
+
+    let query = supabase
+      .from("calendar_integrations")
+      .select("id,refresh_token_encrypted")
+      .eq("business_id", auth.business.id)
+      .eq("provider", "google");
+
+    query = professionalId
+      ? query.eq("professional_id", professionalId)
+      : query.is("professional_id", null);
+
+    const { data: integration } = await query.maybeSingle();
+
+    if (!integration) {
+      return NextResponse.json({ disconnected: true });
+    }
+
+    if (integration.refresh_token_encrypted) {
       try {
         await fetch("https://oauth2.googleapis.com/revoke", {
           method: "POST",
@@ -39,8 +70,7 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase
       .from("calendar_integrations")
       .delete()
-      .eq("business_id", auth.business.id)
-      .eq("provider", "google");
+      .eq("id", integration.id);
 
     if (error) throw error;
 
