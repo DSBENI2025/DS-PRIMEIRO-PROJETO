@@ -188,7 +188,8 @@ export async function POST(req: NextRequest) {
       const googleBusy = await isGoogleCalendarBusy(
         businessId,
         start.toISOString(),
-        end.toISOString()
+        end.toISOString(),
+        professionalId
       );
 
       if (googleBusy) {
@@ -224,6 +225,7 @@ export async function POST(req: NextRequest) {
     try {
       const googleEventId = await createGoogleCalendarEvent({
         businessId,
+        professionalId,
         summary: service.name + " - " + customerName,
         description:
           "Cliente: " +
