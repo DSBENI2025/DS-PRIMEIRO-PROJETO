@@ -88,7 +88,10 @@ export default function PainelPage() {
         .from("appointments")
         .select("id,customer_name,customer_phone,start_time,status,services(name),professionals(name)")
         .eq("business_id", businessData.id)
-        .gte("start_time", new Date().toISOString())
+        .gte(
+          "start_time",
+          new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        )
         .order("start_time")
         .limit(30),
       fetch("/api/google/status", {
@@ -655,7 +658,7 @@ export default function PainelPage() {
           </div>
 
           <section className="card">
-            <h2>Próximos agendamentos</h2>
+            <h2>Agendamentos recentes e próximos</h2>
             <div className="list">
               {appointments.length === 0 && <p>Nenhum agendamento futuro.</p>}
               {appointments.map((appointment) => (
@@ -664,6 +667,8 @@ export default function PainelPage() {
                   <span>
                     {new Date(appointment.start_time).toLocaleString("pt-BR")} · {appointment.services?.name || "Serviço"} · {appointment.professionals?.name || "Profissional"} · {appointment.customer_phone}
                   </span>
+                  <span>Status: {appointment.status}</span>
+                  {appointment.status === "confirmed" && (
                   <div className="appointment-actions">
                     <button
                       className="secondary compact-action"
@@ -688,6 +693,7 @@ export default function PainelPage() {
                       Cancelar
                     </button>
                   </div>
+                  )}
                 </div>
               ))}
             </div>
