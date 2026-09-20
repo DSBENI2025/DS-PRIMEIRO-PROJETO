@@ -56,16 +56,62 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
         run: |
+          health_ok=0
+
           for attempt in {1..12}; do
-            if curl --fail --silent --show-error "$DEPLOYMENT_URL/api/health"; then
-              echo
+            if curl               --fail               --silent               --show-error               --max-time 20               --output /tmp/health.json               "$DEPLOYMENT_URL/api/health"               && node -e 'const fs=require("fs"); const d=JSON.parse(fs.readFileSync("/tmp/health.json","utf8")); if (d.status!=="ok" || d.database!==true || d.schemaReady!==true || !Array.isArray(d.missingTables) || d.missingTables.length!==0) process.exit(1);'
+            then
+              health_ok=1
               echo "Production health check passed."
-              exit 0
+              cat /tmp/health.json
+              echo
+              break
             fi
 
             echo "Health check attempt $attempt failed. Retrying..."
+            if [ -f /tmp/health.json ]; then
+              cat /tmp/health.json || true
+              echo
+            fi
             sleep 5
           done
 
-          echo "Production health check failed."
-          exit 1
+          if [ "$health_ok" -ne 1 ]; then
+            echo "Production health check failed."
+            exit 1
+          fi
+
+      - name: Smoke test public pages
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          for path in "/" "/login"; do
+            echo "Checking $path"
+            curl               --fail               --silent               --show-error               --location               --max-time 20               --output /dev/null               "$DEPLOYMENT_URL$path"
+          done
+
+      - name: Verify security headers
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          curl             --fail             --silent             --show-error             --location             --max-time 20             --dump-header /tmp/headers.txt             --output /dev/null             "$DEPLOYMENT_URL/login"
+
+          grep -qi '^x-content-type-options: nosniff' /tmp/headers.txt
+          grep -qi '^x-frame-options: DENY' /tmp/headers.txt
+          grep -qi '^referrer-policy: strict-origin-when-cross-origin' /tmp/headers.txt
+
+      - name: Post-deploy summary
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          echo "### Post-deploy checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Health JSON: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Database: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Schema: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Landing page: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Login page: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Security headers: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Production URL: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
