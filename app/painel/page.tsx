@@ -109,6 +109,17 @@ export default function PainelPage() {
     await load();
   }
 
+  async function cancelAppointment(id: string) {
+    const supabase = getSupabaseBrowser();
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "cancelled" })
+      .eq("id", id);
+
+    if (error) return setMessage(error.message);
+    await load();
+  }
+
   async function subscribe() {
     const supabase = getSupabaseBrowser();
     const { data } = await supabase.auth.getSession();
@@ -169,8 +180,13 @@ export default function PainelPage() {
       {canUse && (
         <>
           <section className="card">
-            <h2>Seu link de agendamento</h2>
-            <div className="public-link">{publicUrl}</div>
+            <div className="row between">
+              <div>
+                <h2>Seu link de agendamento</h2>
+                <div className="public-link">{publicUrl}</div>
+              </div>
+              <a className="secondary" href="/painel/horarios">Editar horários</a>
+            </div>
           </section>
 
           <div className="grid-2">
@@ -217,8 +233,11 @@ export default function PainelPage() {
                 <div className="list-item" key={appointment.id}>
                   <strong>{appointment.customer_name}</strong>
                   <span>
-                    {new Date(appointment.start_time).toLocaleString("pt-BR")} · {appointment.services?.name || "Serviço"} · {appointment.professionals?.name || "Profissional"}
+                    {new Date(appointment.start_time).toLocaleString("pt-BR")} · {appointment.services?.name || "Serviço"} · {appointment.professionals?.name || "Profissional"} · {appointment.customer_phone}
                   </span>
+                  <button className="danger-link" onClick={() => cancelAppointment(appointment.id)}>
+                    Cancelar agendamento
+                  </button>
                 </div>
               ))}
             </div>
