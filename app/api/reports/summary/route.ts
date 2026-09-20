@@ -7,7 +7,8 @@ type AppointmentRow = {
   id: string;
   status: string;
   start_time: string;
-  services: { name?: string; price_cents?: number } | { name?: string; price_cents?: number }[] | null;
+  service_price_cents: number;
+  services: { name?: string } | { name?: string }[] | null;
   professionals: { name?: string } | { name?: string }[] | null;
 };
 
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     const [appointmentsResult, paymentsResult] = await Promise.all([
       supabase
         .from("appointments")
-        .select("id,status,start_time,services(name,price_cents),professionals(name)")
+        .select("id,status,start_time,service_price_cents,services(name),professionals(name)")
         .eq("business_id", auth.business.id)
         .gte("start_time", start.toISOString())
         .lte("start_time", end.toISOString())
@@ -73,8 +74,7 @@ export async function GET(req: NextRequest) {
     );
 
     const grossRevenueCents = activeAppointments.reduce((total, item) => {
-      const service = one(item.services);
-      return total + Number(service?.price_cents || 0);
+      return total + Number(item.service_price_cents || 0);
     }, 0);
 
     const pixCollectedCents = payments.reduce(
@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
       const professional = one(item.professionals);
       const serviceName = service?.name || "Serviço";
       const professionalName = professional?.name || "Profissional";
-      const priceCents = Number(service?.price_cents || 0);
+      const priceCents = Number(item.service_price_cents || 0);
       const day = item.start_time.slice(0, 10);
 
       const serviceStats = serviceMap.get(serviceName) || {

@@ -233,6 +233,7 @@ export async function POST(req: NextRequest) {
         customer_email: customerEmail || null,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
+        service_price_cents: service.price_cents,
         status: "confirmed",
         whatsapp_opt_in: whatsappOptIn,
         whatsapp_consent_at: whatsappOptIn ? new Date().toISOString() : null,

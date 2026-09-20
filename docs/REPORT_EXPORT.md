@@ -42,6 +42,10 @@ O arquivo:
 - protege células iniciadas por `=`, `+`, `-` ou `@` contra formula injection;
 - pode ser aberto em Excel, Google Sheets e ferramentas equivalentes.
 
-## Observação financeira
+## Valor histórico
 
-O campo de valor do serviço segue o mesmo modelo atual dos relatórios do Agenda Pro e usa o preço cadastrado no serviço. Um snapshot imutável de preço por atendimento deve ser adotado para histórico financeiro definitivo quando o produto avançar para conciliação contábil.
+O campo de valor do serviço usa `appointments.service_price_cents`, congelado no momento em que o atendimento é criado.
+
+Se o estabelecimento reajustar o preço do serviço depois, relatórios e exportações de atendimentos já existentes preservam o valor original.
+
+Atendimentos antigos existentes antes da migration `000009` são preenchidos com a melhor referência disponível no momento da migração: primeiro o snapshot do Pix, quando existir; caso contrário, o preço atual do serviço naquele momento.

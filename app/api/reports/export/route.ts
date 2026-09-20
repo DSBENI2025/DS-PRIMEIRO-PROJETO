@@ -11,10 +11,11 @@ type AppointmentRow = {
   start_time: string;
   end_time: string;
   status: string;
+  service_price_cents: number;
   booking_payment_id: string | null;
   services:
-    | { name?: string; price_cents?: number }
-    | { name?: string; price_cents?: number }[]
+    | { name?: string }
+    | { name?: string }[]
     | null;
   professionals:
     | { name?: string }
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase
       .from("appointments")
       .select(
-        "id,customer_name,customer_phone,customer_email,start_time,end_time,status,booking_payment_id,services(name,price_cents),professionals(name)"
+        "id,customer_name,customer_phone,customer_email,start_time,end_time,status,service_price_cents,booking_payment_id,services(name),professionals(name)"
       )
       .eq("business_id", auth.business.id)
       .gte("start_time", start.toISOString())
@@ -156,7 +157,7 @@ export async function GET(req: NextRequest) {
         service?.name || "",
         professional?.name || "",
         item.status,
-        reais(Number(service?.price_cents || 0)),
+        reais(Number(item.service_price_cents || 0)),
         payment ? reais(payment.amount_cents) : "",
         payment?.status || "",
         payment?.paid_at ? localDate(payment.paid_at) + " " + localTime(payment.paid_at) : "",
