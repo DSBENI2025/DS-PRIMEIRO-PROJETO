@@ -19,6 +19,14 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
+    await supabase
+      .from("businesses")
+      .update({
+        deposit_enabled: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", auth.business.id);
+
     return NextResponse.json({ disconnected: true });
   } catch (error) {
     console.error(error);
