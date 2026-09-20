@@ -34,7 +34,7 @@ export default function PainelPage() {
   const [price, setPrice] = useState("0");
   const [professionalName, setProfessionalName] = useState("");
   const [message, setMessage] = useState("");
-  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);\n  const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
   const [depositEnabled, setDepositEnabled] = useState(true);
   const [depositPercent, setDepositPercent] = useState(50);
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,7 @@ export default function PainelPage() {
     setDepositEnabled(Boolean(businessData.deposit_enabled));
     setDepositPercent(Number(businessData.deposit_percent || 50));
 
-    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse] = await Promise.all([
+    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse, mercadoPagoStatusResponse] = await Promise.all([
       supabase.from("services").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("professionals").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("subscriptions").select("status").order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -81,6 +81,11 @@ export default function PainelPage() {
           Authorization: "Bearer " + sessionData.session.access_token,
         },
       }),
+      fetch("/api/mercadopago/status", {
+        headers: {
+          Authorization: "Bearer " + sessionData.session.access_token,
+        },
+      }),
     ]);
 
     setServices((servicesResult.data || []) as Service[]);
@@ -91,6 +96,11 @@ export default function PainelPage() {
     if (googleStatusResponse.ok) {
       const googleStatus = await googleStatusResponse.json();
       setGoogleConnected(Boolean(googleStatus.connected));
+    }
+
+    if (mercadoPagoStatusResponse.ok) {
+      const mercadoPagoStatus = await mercadoPagoStatusResponse.json();
+      setMercadoPagoConnected(Boolean(mercadoPagoStatus.connected));
     }
 
     setLoading(false);
@@ -180,6 +190,58 @@ export default function PainelPage() {
     }
 
     window.location.href = result.authorizationUrl;
+  }
+
+  async function connectMercadoPago() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/mercadopago/connect", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(
+        result.error || "Não foi possível conectar o Mercado Pago."
+      );
+      return;
+    }
+
+    window.location.href = result.authorizationUrl;
+  }
+
+  async function disconnectMercadoPago() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/mercadopago/disconnect", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(
+        result.error || "Não foi possível desconectar o Mercado Pago."
+      );
+      return;
+    }
+
+    setMercadoPagoConnected(false);
   }
 
   async function disconnectGoogle() {
@@ -317,6 +379,31 @@ export default function PainelPage() {
           <section className="card">
             <div className="row between">
               <div>
+                <h2>Mercado Pago do estabelecimento</h2>
+                <p>
+                  {mercadoPagoConnected
+                    ? "Conectado. Os sinais Pix dos clientes são processados na conta deste estabelecimento."
+                    : "Conecte a conta Mercado Pago do estabelecimento antes de ativar o sinal Pix."}
+                </p>
+              </div>
+              {mercadoPagoConnected ? (
+                <button
+                  className="secondary"
+                  onClick={disconnectMercadoPago}
+                >
+                  Desconectar
+                </button>
+              ) : (
+                <button className="cta" onClick={connectMercadoPago}>
+                  Conectar Mercado Pago
+                </button>
+              )}
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="row between">
+              <div>
                 <h2>Sinal via Pix</h2>
                 <p>
                   Quando ativado, serviços com valor só são confirmados depois
@@ -331,6 +418,7 @@ export default function PainelPage() {
                 <input
                   type="checkbox"
                   checked={depositEnabled}
+                  disabled={!mercadoPagoConnected}
                   onChange={(e) => setDepositEnabled(e.target.checked)}
                 />
                 Exigir sinal para confirmar agendamentos pagos
