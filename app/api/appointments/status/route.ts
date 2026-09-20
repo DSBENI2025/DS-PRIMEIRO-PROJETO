@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (new Date(appointment.start_time).getTime() > Date.now()) {
+      return NextResponse.json(
+        { error: "O horário ainda não aconteceu." },
+        { status: 409 }
+      );
+    }
+
     if (appointment.status === "cancelled") {
       return NextResponse.json(
         { error: "Agendamento cancelado não pode ser concluído." },
