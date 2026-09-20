@@ -27,3 +27,28 @@ export async function getEffectiveWorkingHours(args: {
 
   return businessHours || null;
 }
+
+
+export async function isScheduleBlocked(args: {
+  businessId: string;
+  professionalId: string;
+  startTime: string;
+  endTime: string;
+}) {
+  const supabase = getSupabaseAdmin();
+
+  const { data, error } = await supabase
+    .from("schedule_blocks")
+    .select("id")
+    .eq("business_id", args.businessId)
+    .lt("start_time", args.endTime)
+    .gt("end_time", args.startTime)
+    .or(
+      "professional_id.is.null,professional_id.eq." + args.professionalId
+    )
+    .limit(1);
+
+  if (error) throw error;
+
+  return Boolean(data && data.length > 0);
+}
