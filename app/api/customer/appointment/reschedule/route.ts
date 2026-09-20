@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { businessHasActiveSubscription } from "@/lib/business-access";
 import {
   extendAppointmentAccessToken,
   getAppointmentAccessByToken,
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     const { data: appointment } = await supabase
       .from("appointments")
       .select(
-        "id,business_id,service_id,professional_id,customer_name,customer_phone,customer_email,start_time,end_time,status,google_event_id,google_integration_id,booking_payment_id,services(name,duration_minutes),businesses(name,timezone)"
+        "id,business_id,service_id,professional_id,customer_name,customer_phone,customer_email,start_time,end_time,status,google_event_id,google_integration_id,booking_payment_id,services(name,duration_minutes),businesses(name,timezone,owner_id,active)"
       )
       .eq("id", access.appointment_id)
       .maybeSingle();
@@ -97,6 +98,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Dados do agendamento inválidos." },
         { status: 400 }
+      );
+    }
+
+    if (
+      !business.active ||
+      !(await businessHasActiveSubscription(
+        appointment.business_id,
+        business.owner_id
+      ))
+    ) {
+      return NextResponse.json(
+        { error: "A agenda online está temporariamente indisponível." },
+        { status: 403 }
       );
     }
 
