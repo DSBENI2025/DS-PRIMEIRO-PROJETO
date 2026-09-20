@@ -1,0 +1,8 @@
+body { margin: 0; font-family: Arial, sans-serif; background: #f7f7f8; color: #111; }
+main { max-width: 960px; margin: 0 auto; padding: 56px 24px; }
+.card { background: white; border: 1px solid #e7e7ea; border-radius: 18px; padding: 28px; }
+h1 { font-size: 44px; }
+.price { font-size: 36px; font-weight: 700; }
+.features { line-height: 1.9; }
+.cta { margin-top: 18px; padding: 14px 22px; border: 0; border-radius: 10px; background: #111; color: white; font-weight: 700; cursor: pointer; }
+.muted { font-size: 13px; color: #777; }
