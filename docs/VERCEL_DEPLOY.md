@@ -36,7 +36,7 @@ O workflow:
 5. gera o artefato com `vercel build --prod`;
 6. publica com `vercel deploy --prebuilt --prod`;
 7. consulta `/api/health`;
-8. falha se a aplicação não estiver saudável.
+8. falha se variáveis, banco ou schema/migrations estiverem incompletos.
 
 A CLI da Vercel está fixada em `59.20.0` para evitar mudança inesperada do pipeline.
 
@@ -48,8 +48,10 @@ Antes do primeiro deploy:
 2. vincule o repositório;
 3. configure todas as variáveis de produção;
 4. configure os três secrets do workflow;
-5. aplique a migration do Supabase;
-6. execute o workflow manual.
+5. configure os secrets do workflow do Supabase;
+6. execute **Deploy Supabase migrations**;
+7. confirme que as migrations terminaram sem erro;
+8. execute **Deploy production to Vercel**.
 
 ## Segurança
 
