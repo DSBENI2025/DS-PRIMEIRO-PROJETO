@@ -91,6 +91,7 @@ export default function BookingForm({
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [customerCpf, setCustomerCpf] = useState("");
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -209,6 +210,13 @@ export default function BookingForm({
       return;
     }
 
+    const cpfDigits = customerCpf.replace(/\D/g, "");
+
+    if (requiresPix && cpfDigits.length !== 11) {
+      setMessage("Informe um CPF válido com 11 dígitos para gerar o Pix.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -226,6 +234,7 @@ export default function BookingForm({
             customerName,
             customerPhone,
             customerEmail,
+            customerCpf: customerCpf.replace(/\D/g, ""),
           }),
         }
       );
@@ -374,6 +383,20 @@ export default function BookingForm({
           value={customerEmail}
           onChange={(e) => setCustomerEmail(e.target.value)}
         />
+
+        {requiresPix && (
+          <input
+            className="input"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="CPF para o Pix"
+            disabled={formLocked}
+            value={customerCpf}
+            onChange={(e) =>
+              setCustomerCpf(e.target.value.replace(/\D/g, "").slice(0, 11))
+            }
+          />
+        )}
 
         {requiresPix && !paymentReady && !payment && (
           <div className="booking-message">
