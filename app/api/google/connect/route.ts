@@ -17,10 +17,17 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const professionalId =
+    let professionalId =
       typeof body.professionalId === "string" && body.professionalId
         ? body.professionalId
         : null;
+
+    if (auth.role === "professional") {
+      if (!auth.professionalId) {
+        return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+      }
+      professionalId = auth.professionalId;
+    }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
