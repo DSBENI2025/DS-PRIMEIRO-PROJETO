@@ -1,0 +1,72 @@
+name: Incidente de produção
+description: Registrar falha relevante no ambiente real
+title: "[Incidente] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Não cole tokens, secrets, payloads completos com dados pessoais ou credenciais.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidade
+      options:
+        - "P1 - serviço indisponível / pagamentos comprometidos"
+        - "P2 - funcionalidade crítica degradada"
+        - "P3 - impacto parcial com alternativa"
+        - "P4 - baixo impacto"
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impacto observado
+      description: Quem foi afetado e qual fluxo parou/degradou?
+    validations:
+      required: true
+
+  - type: textarea
+    id: started
+    attributes:
+      label: Início aproximado
+      placeholder: "20/09/2026 14:30 BRT"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Componente
+      options:
+        - Vercel / aplicação
+        - Supabase / banco
+        - Mercado Pago / assinatura
+        - Mercado Pago / Pix
+        - Google Agenda
+        - WhatsApp
+        - GitHub Actions
+        - Outro
+    validations:
+      required: true
+
+  - type: textarea
+    id: signals
+    attributes:
+      label: Sinais e evidências sanitizadas
+      description: Health check, status HTTP, mensagem de erro sem segredo, IDs não sensíveis.
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Mitigação já tentada
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Segurança
+      options:
+        - label: Confirmei que esta issue não contém credenciais ou dados pessoais sensíveis.
+          required: true
