@@ -1,10 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  resolveWorkingHour,
-  type ProfessionalWorkingHour,
-} from "@/lib/scheduling-hours";
+import { useEffect, useState } from "react";
 
 type Service = {
   id: string;
@@ -18,12 +14,6 @@ type Professional = {
   name: string;
 };
 
-type BusinessHour = {
-  weekday: number;
-  opens_at: string | null;
-  closes_at: string | null;
-  is_closed: boolean;
-};
 
 type PixPayment = {
   reservationId: string;
@@ -41,8 +31,6 @@ type Props = {
   businessName: string;
   services: Service[];
   professionals: Professional[];
-  hours: BusinessHour[];
-  professionalHours: ProfessionalWorkingHour[];
   depositEnabled: boolean;
   depositPercent: number;
   paymentReady: boolean;
@@ -53,19 +41,6 @@ function ymd(date: Date) {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return y + "-" + m + "-" + d;
-}
-
-function minutes(value: string) {
-  const [h, m] = value.slice(0, 5).split(":").map(Number);
-  return h * 60 + m;
-}
-
-function hhmm(total: number) {
-  return (
-    String(Math.floor(total / 60)).padStart(2, "0") +
-    ":" +
-    String(total % 60).padStart(2, "0")
-  );
 }
 
 function brl(cents: number) {
@@ -80,8 +55,6 @@ export default function BookingForm({
   businessName,
   services,
   professionals,
-  hours,
-  professionalHours,
   depositEnabled,
   depositPercent,
   paymentReady,
@@ -103,6 +76,10 @@ export default function BookingForm({
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [payment, setPayment] = useState<PixPayment | null>(null);
+  const [slots, setSlots] = useState<string[]>([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
+  const [availabilityVersion, setAvailabilityVersion] = useState(0);
 
   const selectedService = services.find((service) => service.id === serviceId);
   const requiresPix =
@@ -112,33 +89,79 @@ export default function BookingForm({
     ? Math.ceil((selectedService.price_cents * depositPercent) / 100)
     : 0;
 
-  const slots = useMemo(() => {
-    if (!date || !selectedService) return [];
-
-    const weekday = new Date(date + "T12:00:00").getDay();
-    const day = resolveWorkingHour({
-      weekday,
-      professionalId,
-      businessHours: hours,
-      professionalHours,
-    });
-
-    if (!day || day.is_closed || !day.opens_at || !day.closes_at) return [];
-
-    const start = minutes(day.opens_at);
-    const close = minutes(day.closes_at);
-    const result: string[] = [];
-
-    for (
-      let value = start;
-      value + selectedService.duration_minutes <= close;
-      value += 30
-    ) {
-      result.push(hhmm(value));
+  useEffect(() => {
+    if (!businessId || !serviceId || !professionalId || !date) {
+      setSlots([]);
+      return;
     }
 
-    return result;
-  }, [date, hours, professionalHours, professionalId, selectedService]);
+    const controller = new AbortController();
+    setAvailabilityLoading(true);
+    setAvailabilityMessage("");
+
+    const query = new URLSearchParams({
+      businessId,
+      serviceId,
+      professionalId,
+      date,
+    });
+
+    fetch("/api/availability?" + query.toString(), {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.error || "Não foi possível consultar os horários."
+          );
+        }
+
+        const nextSlots = Array.isArray(result.slots) ? result.slots : [];
+        setSlots(nextSlots);
+        setTime((current) =>
+          current && nextSlots.includes(current) ? current : ""
+        );
+
+        if (nextSlots.length === 0) {
+          setAvailabilityMessage(
+            "Não há horários livres para esta combinação de data e profissional."
+          );
+        } else if (result.googleChecked === false) {
+          setAvailabilityMessage(
+            "Horários internos atualizados. A agenda Google será validada novamente na confirmação."
+          );
+        }
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setSlots([]);
+        setTime("");
+        setAvailabilityMessage(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível consultar os horários."
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setAvailabilityLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [
+    businessId,
+    serviceId,
+    professionalId,
+    date,
+    availabilityVersion,
+  ]);
 
   useEffect(() => {
     if (!payment?.reservationId || success) return;
@@ -181,6 +204,7 @@ export default function BookingForm({
               ? "O Pix expirou e o horário foi liberado. Gere uma nova reserva."
               : "O pagamento não confirmou. O horário foi liberado."
           );
+          setAvailabilityVersion((current) => current + 1);
           window.clearInterval(timer);
         }
       } catch (error) {
@@ -255,6 +279,11 @@ export default function BookingForm({
       const result = await response.json();
 
       if (!response.ok) {
+        if (response.status === 409) {
+          setTime("");
+          setAvailabilityVersion((current) => current + 1);
+        }
+
         throw new Error(
           result.error || "Não foi possível concluir o agendamento."
         );
@@ -366,10 +395,12 @@ export default function BookingForm({
           <select
             className="input"
             value={time}
-            disabled={formLocked}
+            disabled={formLocked || availabilityLoading}
             onChange={(e) => setTime(e.target.value)}
           >
-            <option value="">Selecione</option>
+            <option value="">
+              {availabilityLoading ? "Consultando horários..." : "Selecione"}
+            </option>
             {slots.map((slot) => (
               <option key={slot} value={slot}>
                 {slot}
@@ -377,6 +408,10 @@ export default function BookingForm({
             ))}
           </select>
         </label>
+
+        {availabilityMessage && !payment && (
+          <div className="availability-note">{availabilityMessage}</div>
+        )}
 
         <input
           className="input"
@@ -449,6 +484,7 @@ export default function BookingForm({
             onClick={submit}
             disabled={
               loading ||
+              availabilityLoading ||
               slots.length === 0 ||
               (requiresPix && !paymentReady)
             }
