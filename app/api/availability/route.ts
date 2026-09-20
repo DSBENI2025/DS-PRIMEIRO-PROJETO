@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
     const closeMinutes = toMinutes(hours.closes_at);
     const duration = Number(service.duration_minutes);
 
-    const [appointmentsResult, holdsResult] = await Promise.all([
+    const [appointmentsResult, holdsResult, blocksResult] = await Promise.all([
       supabase
         .from("appointments")
         .select("start_time,end_time")
@@ -165,10 +165,20 @@ export async function GET(req: NextRequest) {
         .gt("expires_at", new Date().toISOString())
         .lt("start_time", dayEnd.toISOString())
         .gt("end_time", dayStart.toISOString()),
+      supabase
+        .from("schedule_blocks")
+        .select("start_time,end_time")
+        .eq("business_id", businessId)
+        .lt("start_time", dayEnd.toISOString())
+        .gt("end_time", dayStart.toISOString())
+        .or(
+          "professional_id.is.null,professional_id.eq." + professionalId
+        ),
     ]);
 
     if (appointmentsResult.error) throw appointmentsResult.error;
     if (holdsResult.error) throw holdsResult.error;
+    if (blocksResult.error) throw blocksResult.error;
 
     let googleBusy: { start: string; end: string }[] = [];
     let googleChecked = true;
@@ -187,6 +197,7 @@ export async function GET(req: NextRequest) {
 
     const appointments = appointmentsResult.data || [];
     const holds = holdsResult.data || [];
+    const blocks = blocksResult.data || [];
     const slots: string[] = [];
 
     for (
@@ -205,6 +216,9 @@ export async function GET(req: NextRequest) {
           overlaps(start, end, item.start_time, item.end_time)
         ) ||
         holds.some((item) =>
+          overlaps(start, end, item.start_time, item.end_time)
+        ) ||
+        blocks.some((item) =>
           overlaps(start, end, item.start_time, item.end_time)
         );
 
