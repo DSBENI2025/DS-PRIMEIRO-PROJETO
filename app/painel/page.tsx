@@ -32,6 +32,8 @@ export default function PainelPage() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState("pending");
+  const [role, setRole] = useState<"owner" | "admin" | "professional">("owner");
+  const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [serviceName, setServiceName] = useState("");
   const [duration, setDuration] = useState(40);
   const [price, setPrice] = useState("0");
@@ -48,6 +50,8 @@ export default function PainelPage() {
   const [loading, setLoading] = useState(true);
 
   const canUse = subscriptionStatus === "authorized";
+  const canManage = role === "owner" || role === "admin";
+  const canManageBilling = role === "owner";
 
   async function load() {
     const supabase = getSupabaseBrowser();
@@ -80,10 +84,15 @@ export default function PainelPage() {
       Boolean(businessData.whatsapp_followup_enabled)
     );
 
-    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse, mercadoPagoStatusResponse, whatsappStatusResponse] = await Promise.all([
+    const [servicesResult, professionalsResult, accountContextResponse, appointmentsResult, googleStatusResponse, mercadoPagoStatusResponse, whatsappStatusResponse] = await Promise.all([
       supabase.from("services").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("professionals").select("*").eq("business_id", businessData.id).order("created_at"),
-      supabase.from("subscriptions").select("status").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      fetch("/api/account/context", {
+        headers: {
+          Authorization: "Bearer " + sessionData.session.access_token,
+        },
+        cache: "no-store",
+      }),
       supabase
         .from("appointments")
         .select("id,customer_name,customer_phone,start_time,status,services(name),professionals(name)")
@@ -113,8 +122,16 @@ export default function PainelPage() {
 
     setServices((servicesResult.data || []) as Service[]);
     setProfessionals((professionalsResult.data || []) as Professional[]);
-    setSubscriptionStatus(subscriptionResult.data?.status || "pending");
     setAppointments((appointmentsResult.data || []) as unknown as Appointment[]);
+
+    if (accountContextResponse.ok) {
+      const context = await accountContextResponse.json();
+      setSubscriptionStatus(context.subscriptionStatus || "inactive");
+      setRole(context.role || "professional");
+      setProfessionalId(context.professionalId || null);
+    } else {
+      setSubscriptionStatus("inactive");
+    }
 
     if (googleStatusResponse.ok) {
       const googleStatus = await googleStatusResponse.json();
