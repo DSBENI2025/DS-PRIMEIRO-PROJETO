@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
-import { getEffectiveWorkingHours } from "@/lib/availability-server";
+import {
+  getEffectiveWorkingHours,
+  isScheduleBlocked,
+} from "@/lib/availability-server";
 import {
   createGoogleCalendarEvent,
   isGoogleCalendarBusy,
@@ -180,6 +183,20 @@ export async function POST(req: NextRequest) {
     if (pendingHold && pendingHold.length > 0) {
       return NextResponse.json(
         { error: "Esse horário está temporariamente reservado para pagamento." },
+        { status: 409 }
+      );
+    }
+
+    const blocked = await isScheduleBlocked({
+      businessId,
+      professionalId,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+    });
+
+    if (blocked) {
+      return NextResponse.json(
+        { error: "Este horário está bloqueado na agenda." },
         { status: 409 }
       );
     }
