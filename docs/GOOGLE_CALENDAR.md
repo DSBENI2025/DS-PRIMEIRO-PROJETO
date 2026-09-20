@@ -29,15 +29,42 @@ O Agenda Pro solicita:
 - `https://www.googleapis.com/auth/calendar.events.owned`
 - `https://www.googleapis.com/auth/calendar.freebusy`
 
-## 4. Funcionamento
+## 4. Calendário geral
 
-- o usuário conecta o Google Agenda pelo painel;
-- o callback armazena os tokens criptografados;
-- antes de criar um agendamento, o sistema consulta `freeBusy`;
-- depois da reserva, cria um evento em `primary`;
-- ao cancelar pelo painel, tenta remover o evento correspondente;
-- access tokens expirados são renovados com o refresh token.
+O estabelecimento pode conectar um Google Agenda pelo painel principal.
 
-## Limitação atual
+Esse calendário funciona como fallback para profissionais que não possuem conexão própria.
 
-Nesta versão, existe uma conexão Google por negócio. A evolução planejada é uma conexão por profissional.
+## 5. Calendário por profissional
+
+Na página:
+
+`/painel/profissionais/[id]/horarios`
+
+é possível conectar um Google Agenda exclusivo para aquele profissional.
+
+A prioridade é:
+
+1. Google Agenda próprio do profissional;
+2. Google Agenda geral do estabelecimento;
+3. sem integração Google.
+
+Antes de confirmar uma reserva, o Agenda Pro consulta a disponibilidade no calendário efetivo.
+
+Depois da reserva, o evento é criado nesse mesmo calendário.
+
+No cancelamento, o sistema tenta remover o evento do calendário correspondente.
+
+## 6. Tokens
+
+Os access/refresh tokens são armazenados criptografados.
+
+Access tokens expirados são renovados usando o refresh token.
+
+Ao renovar, somente o registro específico daquela conexão é atualizado.
+
+## 7. Migração
+
+Para habilitar calendários individuais aplique:
+
+`supabase/migrations/20260920_000003_professional_google_calendar.sql`
