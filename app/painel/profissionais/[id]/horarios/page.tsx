@@ -172,9 +172,7 @@ export default function ProfessionalHoursPage() {
       return;
     }
 
-    setGoogleConnected(false);
-    setGoogleInherited(true);
-    setMessage("Agenda própria desconectada.");
+    window.location.reload();
   }
 
   async function save() {
