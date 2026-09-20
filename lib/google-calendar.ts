@@ -34,25 +34,6 @@ async function getExactIntegration(
   return (data || null) as Integration | null;
 }
 
-async function getIntegrationById(
-  businessId: string,
-  integrationId: string
-) {
-  const supabase = getSupabaseAdmin();
-
-  const { data } = await supabase
-    .from("calendar_integrations")
-    .select(
-      "id,business_id,professional_id,access_token_encrypted,refresh_token_encrypted,expires_at,calendar_id"
-    )
-    .eq("id", integrationId)
-    .eq("business_id", businessId)
-    .eq("provider", "google")
-    .maybeSingle();
-
-  return (data || null) as Integration | null;
-}
-
 async function getEffectiveIntegration(
   businessId: string,
   professionalId?: string | null
@@ -67,18 +48,6 @@ async function getEffectiveIntegration(
   }
 
   return getExactIntegration(businessId, null);
-}
-
-export async function getEffectiveGoogleIntegrationId(
-  businessId: string,
-  professionalId?: string | null
-) {
-  const integration = await getEffectiveIntegration(
-    businessId,
-    professionalId
-  );
-
-  return integration?.id || null;
 }
 
 async function accessTokenFor(integration: Integration) {
@@ -214,183 +183,6 @@ export async function isGoogleCalendarBusy(
   return busy.length > 0;
 }
 
-export async function getGoogleCalendarBusyIntervalsExceptEvent(
-  businessId: string,
-  startTime: string,
-  endTime: string,
-  professionalId?: string | null,
-  excludedEventId?: string | null,
-  excludedIntegrationId?: string | null
-): Promise<GoogleBusyInterval[]> {
-  const integration = await getEffectiveIntegration(
-    businessId,
-    professionalId
-  );
-
-  if (!integration) return [];
-
-  const canExclude =
-    Boolean(excludedEventId) &&
-    (!excludedIntegrationId || integration.id === excludedIntegrationId);
-
-  if (!canExclude) {
-    return getGoogleCalendarBusyIntervals(
-      businessId,
-      startTime,
-      endTime,
-      professionalId
-    );
-  }
-
-  const accessToken = await accessTokenFor(integration);
-  const calendarId = integration.calendar_id || "primary";
-  let pageToken = "";
-  const busy: GoogleBusyInterval[] = [];
-
-  do {
-    const params = new URLSearchParams({
-      timeMin: startTime,
-      timeMax: endTime,
-      singleEvents: "true",
-      showDeleted: "false",
-      maxResults: "250",
-    });
-
-    if (pageToken) params.set("pageToken", pageToken);
-
-    const response = await fetch(
-      "https://www.googleapis.com/calendar/v3/calendars/" +
-        encodeURIComponent(calendarId) +
-        "/events?" +
-        params.toString(),
-      {
-        headers: {
-          Authorization: "Bearer " + accessToken,
-        },
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error("Falha ao consultar eventos do Google Agenda.");
-    }
-
-    for (const item of result.items || []) {
-      if (
-        item.id === excludedEventId ||
-        item.status === "cancelled" ||
-        item.transparency === "transparent"
-      ) {
-        continue;
-      }
-
-      const startValue = item.start?.dateTime
-        ? String(item.start.dateTime)
-        : item.start?.date
-          ? String(item.start.date) + "T00:00:00-03:00"
-          : null;
-
-      const endValue = item.end?.dateTime
-        ? String(item.end.dateTime)
-        : item.end?.date
-          ? String(item.end.date) + "T00:00:00-03:00"
-          : null;
-
-      if (startValue && endValue) {
-        busy.push({
-          start: startValue,
-          end: endValue,
-        });
-      }
-    }
-
-    pageToken = String(result.nextPageToken || "");
-  } while (pageToken);
-
-  return busy;
-}
-
-export async function isGoogleCalendarBusyExceptEvent(
-  businessId: string,
-  startTime: string,
-  endTime: string,
-  professionalId?: string | null,
-  excludedEventId?: string | null,
-  excludedIntegrationId?: string | null
-) {
-  const busy = await getGoogleCalendarBusyIntervalsExceptEvent(
-    businessId,
-    startTime,
-    endTime,
-    professionalId,
-    excludedEventId,
-    excludedIntegrationId
-  );
-
-  return busy.length > 0;
-}
-
-export async function updateGoogleCalendarEvent(args: {
-  businessId: string;
-  professionalId?: string | null;
-  integrationId?: string | null;
-  eventId: string;
-  startTime: string;
-  endTime: string;
-  timeZone: string;
-  summary?: string;
-  description?: string;
-}) {
-  const integration = args.integrationId
-    ? await getIntegrationById(args.businessId, args.integrationId)
-    : await getEffectiveIntegration(
-        args.businessId,
-        args.professionalId
-      );
-
-  if (!integration) return false;
-
-  const accessToken = await accessTokenFor(integration);
-  const calendarId = integration.calendar_id || "primary";
-
-  const response = await fetch(
-    "https://www.googleapis.com/calendar/v3/calendars/" +
-      encodeURIComponent(calendarId) +
-      "/events/" +
-      encodeURIComponent(args.eventId),
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: "Bearer " + accessToken,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...(args.summary ? { summary: args.summary } : {}),
-        ...(args.description ? { description: args.description } : {}),
-        start: {
-          dateTime: args.startTime,
-          timeZone: args.timeZone,
-        },
-        end: {
-          dateTime: args.endTime,
-          timeZone: args.timeZone,
-        },
-      }),
-    }
-  );
-
-  if (response.status === 404 || response.status === 410) {
-    return false;
-  }
-
-  if (!response.ok) {
-    throw new Error("Falha ao reagendar evento no Google Agenda.");
-  }
-
-  return true;
-}
-
 export async function createGoogleCalendarEvent(args: {
   businessId: string;
   professionalId?: string | null;
@@ -447,17 +239,14 @@ export async function createGoogleCalendarEvent(args: {
 export async function deleteGoogleCalendarEvent(
   businessId: string,
   eventId: string,
-  professionalId?: string | null,
-  integrationId?: string | null
+  professionalId?: string | null
 ) {
-  const integration = integrationId
-    ? await getIntegrationById(businessId, integrationId)
-    : await getEffectiveIntegration(
-        businessId,
-        professionalId
-      );
+  const integration = await getEffectiveIntegration(
+    businessId,
+    professionalId
+  );
 
-  if (!integration) return false;
+  if (!integration) return;
 
   const accessToken = await accessTokenFor(integration);
   const calendarId = integration.calendar_id || "primary";
@@ -478,6 +267,4 @@ export async function deleteGoogleCalendarEvent(
   if (!response.ok && response.status !== 404 && response.status !== 410) {
     throw new Error("Falha ao remover evento do Google Agenda.");
   }
-
-  return true;
 }
