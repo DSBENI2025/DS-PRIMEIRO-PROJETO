@@ -9,6 +9,8 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - slug público por estabelecimento
 - serviços com duração e preço
 - profissionais
+- equipe com papéis de proprietário, administrador e profissional
+- convites seguros por link
 - horários gerais do estabelecimento
 - horários individuais por profissional, com fallback para o horário geral
 - página pública em `/agendar/[slug]`
@@ -153,8 +155,8 @@ Os lembretes são processados pelo workflow `.github/workflows/notifications.yml
 
 ## Próximos blocos
 
-- mais de um usuário administrador por negócio
-- permissões para equipe
+- disponibilidade pública em tempo real
+- bloqueios manuais, férias e intervalos
 - reembolso automático quando aplicável
 - exportação de relatórios
 - plano anual

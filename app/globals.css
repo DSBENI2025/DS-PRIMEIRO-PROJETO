@@ -88,3 +88,13 @@ p { color: #555; line-height: 1.55; }
 .status-pill.ok { background: #eef9f0; color: #166534; }
 .appointment-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .compact-action { padding: 8px 10px; font-size: 13px; }
+
+.team-invite-grid { display: grid; grid-template-columns: 2fr 1fr 2fr auto; gap: 14px; align-items: end; margin-top: 18px; }
+.invite-result { display: grid; gap: 10px; margin-top: 18px; }
+.invite-result .secondary { width: fit-content; }
+@media (max-width: 900px) {
+  .team-invite-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+  .team-invite-grid { grid-template-columns: 1fr; }
+}

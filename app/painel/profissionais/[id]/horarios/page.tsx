@@ -43,6 +43,32 @@ export default function ProfessionalHoursPage() {
         return;
       }
 
+      const contextResponse = await fetch("/api/account/context", {
+        headers: {
+          Authorization: "Bearer " + session.session.access_token,
+        },
+        cache: "no-store",
+      });
+
+      if (!contextResponse.ok) {
+        window.location.href = "/painel";
+        return;
+      }
+
+      const context = await contextResponse.json();
+
+      if (
+        context.role === "professional" &&
+        context.professionalId !== professionalId
+      ) {
+        window.location.href = context.professionalId
+          ? "/painel/profissionais/" +
+            encodeURIComponent(context.professionalId) +
+            "/horarios"
+          : "/painel";
+        return;
+      }
+
       const { data: professional } = await supabase
         .from("professionals")
         .select("id,name,business_id")

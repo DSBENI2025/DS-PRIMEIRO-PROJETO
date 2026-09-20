@@ -36,6 +36,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ businessId: existing.id, alreadyExists: true });
     }
 
+    const { data: membership } = await supabase
+      .from("business_members")
+      .select("business_id")
+      .eq("user_id", authData.user.id)
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (membership) {
+      return NextResponse.json(
+        {
+          error:
+            "Esta conta já pertence à equipe de um estabelecimento nesta versão.",
+        },
+        { status: 409 }
+      );
+    }
+
     const { data: business, error } = await supabase
       .from("businesses")
       .insert({

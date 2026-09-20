@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedBusiness } from "@/lib/auth-server";
+import { getAuthenticatedBusiness, roleAllowed } from "@/lib/auth-server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
@@ -8,6 +8,10 @@ export async function POST(req: NextRequest) {
 
     if (!auth) {
       return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    }
+
+    if (!roleAllowed(auth.role, ["owner", "admin"])) {
+      return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
     }
 
     const supabase = getSupabaseAdmin();

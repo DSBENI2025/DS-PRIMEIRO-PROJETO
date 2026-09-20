@@ -37,6 +37,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (
+      auth.role === "professional" &&
+      appointment.professional_id !== auth.professionalId
+    ) {
+      return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+    }
+
     if (appointment.status === "cancelled") {
       return NextResponse.json({ cancelled: true });
     }

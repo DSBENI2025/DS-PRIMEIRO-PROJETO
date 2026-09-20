@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedBusiness, roleAllowed } from "@/lib/auth-server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-export async function GET(req: NextRequest) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const auth = await getAuthenticatedBusiness(req);
 
@@ -14,22 +17,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
     }
 
+    const { id } = await params;
     const supabase = getSupabaseAdmin();
 
-    const { data } = await supabase
-      .from("mercadopago_integrations")
-      .select("id,seller_user_id,expires_at,updated_at")
+    const { error } = await supabase
+      .from("team_invitations")
+      .delete()
+      .eq("id", id)
       .eq("business_id", auth.business.id)
-      .maybeSingle();
+      .is("accepted_at", null);
 
-    return NextResponse.json({
-      connected: Boolean(data),
-      integration: data || null,
-    });
+    if (error) throw error;
+
+    return NextResponse.json({ cancelled: true });
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { error: "Falha ao consultar Mercado Pago." },
+      { error: "Não foi possível cancelar o convite." },
       { status: 500 }
     );
   }
