@@ -11,10 +11,17 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const professionalId =
+    let professionalId =
       typeof body.professionalId === "string" && body.professionalId
         ? body.professionalId
         : null;
+
+    if (auth.role === "professional") {
+      if (!auth.professionalId) {
+        return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+      }
+      professionalId = auth.professionalId;
+    }
 
     const supabase = getSupabaseAdmin();
 
