@@ -1,8 +1,6 @@
 const required = [
   "NEXT_PUBLIC_APP_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
   "MERCADO_PAGO_ACCESS_TOKEN",
   "MERCADO_PAGO_WEBHOOK_SECRET",
   "MERCADO_PAGO_PLAN_ID",
@@ -10,9 +8,23 @@ const required = [
   "RATE_LIMIT_SECRET",
 ];
 
+const alternatives = [
+  [
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  ],
+  ["SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+];
+
 const missing = required.filter(
   (name) => !process.env[name] || !process.env[name].trim()
 );
+
+for (const options of alternatives) {
+  if (!options.some((name) => process.env[name]?.trim())) {
+    missing.push(options.join("|"));
+  }
+}
 
 if (missing.length > 0) {
   console.error(
