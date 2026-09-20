@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
+import { ensureAppointmentAccessToken } from "@/lib/customer-appointment-access";
 import {
   getEffectiveWorkingHours,
   isScheduleBlocked,
@@ -283,9 +284,23 @@ export async function POST(req: NextRequest) {
       console.error("Agendamento criado, mas confirmação WhatsApp falhou", error);
     }
 
+    let manageUrl: string | null = null;
+
+    try {
+      manageUrl = (
+        await ensureAppointmentAccessToken(
+          appointment.id,
+          appointment.end_time
+        )
+      ).url;
+    } catch (error) {
+      console.error("Agendamento criado, mas link do cliente falhou", error);
+    }
+
     return NextResponse.json({
       appointmentId: appointment.id,
       startTime: appointment.start_time,
+      manageUrl,
     });
   } catch (error) {
     console.error(error);
