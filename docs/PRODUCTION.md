@@ -10,8 +10,6 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 2. `supabase/migrations/20260920_000002_professional_hours.sql`
 3. `supabase/migrations/20260920_000003_professional_google_calendar.sql`
 4. `supabase/migrations/20260920_000004_team_members.sql`
-5. `supabase/migrations/20260920_000005_schedule_blocks.sql`
-6. `supabase/migrations/20260920_000006_reschedule_appointment.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -103,21 +101,16 @@ O endpoint não expõe tokens nem valores secretos.
 11. criar um convite de profissional e validar acesso somente à própria agenda
 12. criar um convite de administrador e validar permissões gerenciais
 13. abrir o link público
-14. conferir se horários ocupados não aparecem
-15. criar agendamento sem Pix e confirmar que o slot desaparece
-16. gerar pré-reserva Pix e confirmar que o slot fica indisponível
-17. criar bloqueio de horário e confirmar que o slot desaparece
-18. tentar bloquear período com atendimento confirmado e validar a recusa
-19. reagendar atendimento no mesmo profissional e validar o Google
-20. reagendar atendimento para outro profissional e validar a troca de calendário
-21. reagendar atendimento com sinal Pix pago e conferir que não há nova cobrança
-22. testar conflito com evento existente no Google Agenda
-23. testar cancelamento
-24. testar Pix de sinal
-25. validar webhook
-26. validar WhatsApp com consentimento
-27. abrir relatórios
-28. consultar `/api/health`
+14. escolher serviço, profissional e data e conferir se horários ocupados não aparecem
+15. criar um agendamento sem Pix e confirmar que o slot some
+16. gerar uma pré-reserva Pix e confirmar que o slot fica indisponível
+17. testar conflito com evento existente no Google Agenda
+18. testar cancelamento
+19. testar Pix de sinal
+20. validar webhook
+21. validar WhatsApp com consentimento
+22. abrir relatórios
+23. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 
