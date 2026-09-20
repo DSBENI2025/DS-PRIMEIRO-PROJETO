@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
+import { recordAppointmentEvent } from "@/lib/appointment-history";
 import { ensureAppointmentAccessToken } from "@/lib/customer-appointment-access";
 import {
   getEffectiveWorkingHours,
@@ -240,6 +241,25 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    try {
+      await recordAppointmentEvent({
+        appointmentId: appointment.id,
+        businessId,
+        eventType: "created",
+        actorType: "customer",
+        eventKey: "created:" + appointment.id,
+        metadata: {
+          source: "public_booking",
+          serviceId,
+          professionalId,
+          startTime: appointment.start_time,
+          endTime: appointment.end_time,
+        },
+      });
+    } catch (error) {
+      console.error("Agendamento criado, mas auditoria falhou", error);
+    }
 
     try {
       const googleEventId = await createGoogleCalendarEvent({

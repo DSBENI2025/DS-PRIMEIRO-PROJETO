@@ -13,6 +13,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 5. `supabase/migrations/20260920_000005_schedule_blocks.sql`
 6. `supabase/migrations/20260920_000006_reschedule_appointment.sql`
 7. `supabase/migrations/20260920_000007_customer_self_service.sql`
+8. `supabase/migrations/20260920_000008_appointment_history.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -122,7 +123,9 @@ O endpoint não expõe tokens nem valores secretos.
 29. reagendar pelo link do cliente e validar conflitos/Google
 30. cancelar pelo link e validar liberação do horário
 31. testar o mesmo fluxo após aprovação Pix
-32. consultar `/api/health`
+32. abrir o histórico de um atendimento e validar criação/reagendamento/cancelamento/status
+33. validar que profissional só acessa histórico dos próprios atendimentos
+34. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 

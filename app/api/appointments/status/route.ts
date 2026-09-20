@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedBusiness } from "@/lib/auth-server";
+import { recordAppointmentEvent } from "@/lib/appointment-history";
 import { notifyFollowup } from "@/lib/notifications";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -66,6 +67,22 @@ export async function POST(req: NextRequest) {
       .eq("business_id", auth.business.id);
 
     if (error) throw error;
+
+    try {
+      await recordAppointmentEvent({
+        appointmentId,
+        businessId: auth.business.id,
+        eventType: "status_changed",
+        actorType: auth.role,
+        actorUserId: auth.user.id,
+        metadata: {
+          from: appointment.status,
+          to: status,
+        },
+      });
+    } catch (error) {
+      console.error("Status atualizado, mas auditoria falhou", error);
+    }
 
     if (status === "completed") {
       try {

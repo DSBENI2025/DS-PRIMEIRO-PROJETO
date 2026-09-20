@@ -754,6 +754,16 @@ export default function PainelPage() {
                     {new Date(appointment.start_time).toLocaleString("pt-BR")} · {appointment.services?.name || "Serviço"} · {appointment.professionals?.name || "Profissional"} · {appointment.customer_phone}
                   </span>
                   <span>Status: {appointment.status}</span>
+                  <a
+                    className="secondary compact-action"
+                    href={
+                      "/painel/agendamentos/" +
+                      appointment.id +
+                      "/historico"
+                    }
+                  >
+                    Histórico
+                  </a>
                   {appointment.status === "confirmed" && (
                   <div className="appointment-actions">
                     {new Date(appointment.start_time).getTime() > Date.now() && (

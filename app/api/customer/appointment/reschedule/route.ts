@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
+import { recordAppointmentEvent } from "@/lib/appointment-history";
 import {
   extendAppointmentAccessToken,
   getAppointmentAccessByToken,
@@ -223,6 +224,25 @@ export async function POST(req: NextRequest) {
       }
 
       throw rescheduleError || new Error("Falha ao reagendar.");
+    }
+
+    try {
+      await recordAppointmentEvent({
+        appointmentId: appointment.id,
+        businessId: appointment.business_id,
+        eventType: "rescheduled",
+        actorType: "customer",
+        metadata: {
+          oldProfessionalId,
+          newProfessionalId: professionalId,
+          oldStartTime: appointment.start_time,
+          newStartTime: start.toISOString(),
+          oldEndTime: appointment.end_time,
+          newEndTime: end.toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error("Reagendamento do cliente salvo, mas auditoria falhou", error);
     }
 
     let googleSynced = true;
