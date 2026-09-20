@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedBusiness } from "@/lib/auth-server";
+import { recordAppointmentEvent } from "@/lib/appointment-history";
 import { deleteGoogleCalendarEvent } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -67,6 +68,22 @@ export async function POST(req: NextRequest) {
       .eq("id", appointment.id);
 
     if (error) throw error;
+
+    try {
+      await recordAppointmentEvent({
+        appointmentId: appointment.id,
+        businessId: auth.business.id,
+        eventType: "cancelled",
+        actorType: auth.role,
+        actorUserId: auth.user.id,
+        metadata: {
+          previousStatus: appointment.status,
+          professionalId: appointment.professional_id,
+        },
+      });
+    } catch (error) {
+      console.error("Cancelamento salvo, mas auditoria falhou", error);
+    }
 
     return NextResponse.json({ cancelled: true });
   } catch (error) {
