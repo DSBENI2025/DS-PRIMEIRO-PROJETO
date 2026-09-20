@@ -42,3 +42,12 @@ jobs:
           TOKEN_ENCRYPTION_KEY: test-server-encryption-key-32-characters-minimum
           MERCADO_PAGO_CLIENT_ID: TEST_MP_CLIENT_ID
           MERCADO_PAGO_CLIENT_SECRET: TEST_MP_CLIENT_SECRET
+          WHATSAPP_GRAPH_VERSION: v99.0
+          WHATSAPP_PHONE_NUMBER_ID: TEST_PHONE_NUMBER_ID
+          WHATSAPP_ACCESS_TOKEN: TEST_WHATSAPP_TOKEN
+          WHATSAPP_TEMPLATE_LANGUAGE: pt_BR
+          WHATSAPP_TEMPLATE_PIX_PENDING: test_pix_pending
+          WHATSAPP_TEMPLATE_BOOKING_CONFIRMED: test_booking_confirmed
+          WHATSAPP_TEMPLATE_REMINDER: test_reminder
+          WHATSAPP_TEMPLATE_FOLLOWUP: test_followup
+          NOTIFICATION_CRON_SECRET: test-cron-secret
