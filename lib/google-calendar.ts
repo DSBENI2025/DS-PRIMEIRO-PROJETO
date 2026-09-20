@@ -34,6 +34,25 @@ async function getExactIntegration(
   return (data || null) as Integration | null;
 }
 
+async function getIntegrationById(
+  businessId: string,
+  integrationId: string
+) {
+  const supabase = getSupabaseAdmin();
+
+  const { data } = await supabase
+    .from("calendar_integrations")
+    .select(
+      "id,business_id,professional_id,access_token_encrypted,refresh_token_encrypted,expires_at,calendar_id"
+    )
+    .eq("id", integrationId)
+    .eq("business_id", businessId)
+    .eq("provider", "google")
+    .maybeSingle();
+
+  return (data || null) as Integration | null;
+}
+
 async function getEffectiveIntegration(
   businessId: string,
   professionalId?: string | null
@@ -48,6 +67,18 @@ async function getEffectiveIntegration(
   }
 
   return getExactIntegration(businessId, null);
+}
+
+export async function getEffectiveGoogleIntegrationId(
+  businessId: string,
+  professionalId?: string | null
+) {
+  const integration = await getEffectiveIntegration(
+    businessId,
+    professionalId
+  );
+
+  return integration?.id || null;
 }
 
 async function accessTokenFor(integration: Integration) {
@@ -188,7 +219,8 @@ export async function getGoogleCalendarBusyIntervalsExceptEvent(
   startTime: string,
   endTime: string,
   professionalId?: string | null,
-  excludedEventId?: string | null
+  excludedEventId?: string | null,
+  excludedIntegrationId?: string | null
 ): Promise<GoogleBusyInterval[]> {
   const integration = await getEffectiveIntegration(
     businessId,
@@ -197,7 +229,11 @@ export async function getGoogleCalendarBusyIntervalsExceptEvent(
 
   if (!integration) return [];
 
-  if (!excludedEventId) {
+  const canExclude =
+    Boolean(excludedEventId) &&
+    (!excludedIntegrationId || integration.id === excludedIntegrationId);
+
+  if (!canExclude) {
     return getGoogleCalendarBusyIntervals(
       businessId,
       startTime,
@@ -280,14 +316,16 @@ export async function isGoogleCalendarBusyExceptEvent(
   startTime: string,
   endTime: string,
   professionalId?: string | null,
-  excludedEventId?: string | null
+  excludedEventId?: string | null,
+  excludedIntegrationId?: string | null
 ) {
   const busy = await getGoogleCalendarBusyIntervalsExceptEvent(
     businessId,
     startTime,
     endTime,
     professionalId,
-    excludedEventId
+    excludedEventId,
+    excludedIntegrationId
   );
 
   return busy.length > 0;
@@ -296,15 +334,20 @@ export async function isGoogleCalendarBusyExceptEvent(
 export async function updateGoogleCalendarEvent(args: {
   businessId: string;
   professionalId?: string | null;
+  integrationId?: string | null;
   eventId: string;
   startTime: string;
   endTime: string;
   timeZone: string;
+  summary?: string;
+  description?: string;
 }) {
-  const integration = await getEffectiveIntegration(
-    args.businessId,
-    args.professionalId
-  );
+  const integration = args.integrationId
+    ? await getIntegrationById(args.businessId, args.integrationId)
+    : await getEffectiveIntegration(
+        args.businessId,
+        args.professionalId
+      );
 
   if (!integration) return false;
 
@@ -323,6 +366,8 @@ export async function updateGoogleCalendarEvent(args: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        ...(args.summary ? { summary: args.summary } : {}),
+        ...(args.description ? { description: args.description } : {}),
         start: {
           dateTime: args.startTime,
           timeZone: args.timeZone,
@@ -402,12 +447,15 @@ export async function createGoogleCalendarEvent(args: {
 export async function deleteGoogleCalendarEvent(
   businessId: string,
   eventId: string,
-  professionalId?: string | null
+  professionalId?: string | null,
+  integrationId?: string | null
 ) {
-  const integration = await getEffectiveIntegration(
-    businessId,
-    professionalId
-  );
+  const integration = integrationId
+    ? await getIntegrationById(businessId, integrationId)
+    : await getEffectiveIntegration(
+        businessId,
+        professionalId
+      );
 
   if (!integration) return false;
 
