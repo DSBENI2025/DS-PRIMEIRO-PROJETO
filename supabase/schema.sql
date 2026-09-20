@@ -1138,3 +1138,11 @@ grant select on public.business_members to authenticated;
 grant select on public.team_invitations to authenticated;
 grant select, insert, update, delete on public.business_members to service_role;
 grant select, insert, update, delete on public.team_invitations to service_role;
+
+
+drop policy if exists "businesses_admin_update" on public.businesses;
+create policy "businesses_admin_update"
+on public.businesses for update
+to authenticated
+using (public.business_role(id) = 'admin')
+with check (public.business_role(id) = 'admin');
