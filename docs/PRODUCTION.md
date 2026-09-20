@@ -18,6 +18,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 10. `supabase/migrations/20260920_000010_public_rate_limits.sql`
 11. `supabase/migrations/20260920_000011_webhook_events.sql`
 12. `supabase/migrations/20260920_000012_rate_limit_security_invoker.sql`
+13. `supabase/migrations/20260920_000013_supabase_advisor_hardening.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
