@@ -1552,7 +1552,7 @@ returns table (
   retry_after integer
 )
 language plpgsql
-security definer
+security invoker
 set search_path = public
 as $$
 declare
