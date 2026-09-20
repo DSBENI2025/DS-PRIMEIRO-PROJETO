@@ -120,3 +120,12 @@ p { color: #555; line-height: 1.55; }
 @media (max-width: 620px) {
   .appointment-summary { grid-template-columns: 1fr; }
 }
+
+.timeline { display: grid; gap: 0; margin-top: 18px; }
+.timeline-item { position: relative; display: grid; grid-template-columns: 20px 1fr; gap: 14px; padding-bottom: 22px; }
+.timeline-item:not(:last-child)::before { content: ""; position: absolute; left: 7px; top: 16px; bottom: 0; width: 2px; background: #e5e7eb; }
+.timeline-dot { width: 16px; height: 16px; border-radius: 50%; background: #111; margin-top: 3px; z-index: 1; }
+.timeline-content { display: grid; gap: 6px; }
+.timeline-content p { margin: 0; }
+.timeline-meta { color: #666; font-size: 13px; }
+.timeline-change { display: grid; gap: 4px; padding: 10px 12px; background: #f7f7f8; border-radius: 10px; font-size: 14px; }
