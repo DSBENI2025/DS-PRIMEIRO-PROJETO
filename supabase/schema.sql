@@ -594,7 +594,7 @@ create table if not exists public.notification_logs (
   recipient text not null,
   provider_message_id text,
   status text not null
-    check (status in ('sent','failed','skipped')),
+    check (status in ('processing','sent','failed','skipped')),
   error_message text,
   created_at timestamptz not null default now()
 );
