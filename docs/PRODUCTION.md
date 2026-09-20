@@ -14,6 +14,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 6. `supabase/migrations/20260920_000006_reschedule_appointment.sql`
 7. `supabase/migrations/20260920_000007_customer_self_service.sql`
 8. `supabase/migrations/20260920_000008_appointment_history.sql`
+9. `supabase/migrations/20260920_000009_appointment_price_snapshot.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -127,7 +128,8 @@ O endpoint não expõe tokens nem valores secretos.
 33. validar que profissional só acessa histórico dos próprios atendimentos
 34. exportar CSV em 7, 30 e 90 dias e abrir o arquivo em uma planilha
 35. validar que profissional não consegue exportar relatório global
-36. consultar `/api/health`
+36. criar um atendimento, alterar o preço do serviço e confirmar que relatório/CSV mantêm o valor original
+37. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 
