@@ -12,6 +12,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 4. `supabase/migrations/20260920_000004_team_members.sql`
 5. `supabase/migrations/20260920_000005_schedule_blocks.sql`
 6. `supabase/migrations/20260920_000006_reschedule_appointment.sql`
+7. `supabase/migrations/20260920_000007_customer_self_service.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -117,7 +118,11 @@ O endpoint não expõe tokens nem valores secretos.
 25. validar webhook
 26. validar WhatsApp com consentimento
 27. abrir relatórios
-28. consultar `/api/health`
+28. concluir um agendamento e abrir o link "Gerenciar meu agendamento"
+29. reagendar pelo link do cliente e validar conflitos/Google
+30. cancelar pelo link e validar liberação do horário
+31. testar o mesmo fluxo após aprovação Pix
+32. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 
