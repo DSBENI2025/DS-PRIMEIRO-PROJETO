@@ -2,27 +2,62 @@ import { decryptSecret, encryptSecret } from "@/lib/secret-crypto";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type Integration = {
+  id: string;
   business_id: string;
+  professional_id: string | null;
   access_token_encrypted: string;
   refresh_token_encrypted: string;
   expires_at: string;
   calendar_id: string;
 };
 
-async function getIntegration(businessId: string) {
+async function getExactIntegration(
+  businessId: string,
+  professionalId?: string | null
+) {
   const supabase = getSupabaseAdmin();
 
-  const { data } = await supabase
+  let query = supabase
     .from("calendar_integrations")
-    .select("business_id,access_token_encrypted,refresh_token_encrypted,expires_at,calendar_id")
+    .select(
+      "id,business_id,professional_id,access_token_encrypted,refresh_token_encrypted,expires_at,calendar_id"
+    )
     .eq("business_id", businessId)
-    .eq("provider", "google")
-    .maybeSingle();
+    .eq("provider", "google");
+
+  query = professionalId
+    ? query.eq("professional_id", professionalId)
+    : query.is("professional_id", null);
+
+  const { data } = await query.maybeSingle();
 
   return (data || null) as Integration | null;
 }
 
-async function refreshAccessToken(integration: Integration) {
+async function getEffectiveIntegration(
+  businessId: string,
+  professionalId?: string | null
+) {
+  if (professionalId) {
+    const professional = await getExactIntegration(
+      businessId,
+      professionalId
+    );
+
+    if (professional) return professional;
+  }
+
+  return getExactIntegration(businessId, null);
+}
+
+async function accessTokenFor(integration: Integration) {
+  const stillValid =
+    new Date(integration.expires_at).getTime() > Date.now() + 60_000;
+
+  if (stillValid) {
+    return decryptSecret(integration.access_token_encrypted);
+  }
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -64,39 +99,33 @@ async function refreshAccessToken(integration: Integration) {
       expires_at: expiresAt,
       updated_at: new Date().toISOString(),
     })
-    .eq("business_id", integration.business_id)
-    .eq("provider", "google");
+    .eq("id", integration.id);
 
   return result.access_token as string;
 }
 
-export async function getGoogleAccessToken(businessId: string) {
-  const integration = await getIntegration(businessId);
-
-  if (!integration) return null;
-
-  const stillValid =
-    new Date(integration.expires_at).getTime() > Date.now() + 60_000;
-
-  if (stillValid) {
-    return decryptSecret(integration.access_token_encrypted);
-  }
-
-  return refreshAccessToken(integration);
+export async function hasProfessionalGoogleCalendar(
+  businessId: string,
+  professionalId: string
+) {
+  return Boolean(await getExactIntegration(businessId, professionalId));
 }
 
 export async function isGoogleCalendarBusy(
   businessId: string,
   startTime: string,
-  endTime: string
+  endTime: string,
+  professionalId?: string | null
 ) {
-  const integration = await getIntegration(businessId);
+  const integration = await getEffectiveIntegration(
+    businessId,
+    professionalId
+  );
 
   if (!integration) return false;
 
-  const accessToken = await getGoogleAccessToken(businessId);
-
-  if (!accessToken) return false;
+  const accessToken = await accessTokenFor(integration);
+  const calendarId = integration.calendar_id || "primary";
 
   const response = await fetch(
     "https://www.googleapis.com/calendar/v3/freeBusy",
@@ -109,7 +138,7 @@ export async function isGoogleCalendarBusy(
       body: JSON.stringify({
         timeMin: startTime,
         timeMax: endTime,
-        items: [{ id: integration.calendar_id || "primary" }],
+        items: [{ id: calendarId }],
       }),
     }
   );
@@ -120,28 +149,28 @@ export async function isGoogleCalendarBusy(
     throw new Error("Falha ao consultar disponibilidade do Google Agenda.");
   }
 
-  const busy =
-    result.calendars?.[integration.calendar_id || "primary"]?.busy || [];
+  const busy = result.calendars?.[calendarId]?.busy || [];
 
   return busy.length > 0;
 }
 
 export async function createGoogleCalendarEvent(args: {
   businessId: string;
+  professionalId?: string | null;
   summary: string;
   description: string;
   startTime: string;
   endTime: string;
   timeZone: string;
 }) {
-  const integration = await getIntegration(args.businessId);
+  const integration = await getEffectiveIntegration(
+    args.businessId,
+    args.professionalId
+  );
 
   if (!integration) return null;
 
-  const accessToken = await getGoogleAccessToken(args.businessId);
-
-  if (!accessToken) return null;
-
+  const accessToken = await accessTokenFor(integration);
   const calendarId = integration.calendar_id || "primary";
 
   const response = await fetch(
@@ -180,16 +209,17 @@ export async function createGoogleCalendarEvent(args: {
 
 export async function deleteGoogleCalendarEvent(
   businessId: string,
-  eventId: string
+  eventId: string,
+  professionalId?: string | null
 ) {
-  const integration = await getIntegration(businessId);
+  const integration = await getEffectiveIntegration(
+    businessId,
+    professionalId
+  );
 
   if (!integration) return;
 
-  const accessToken = await getGoogleAccessToken(businessId);
-
-  if (!accessToken) return;
-
+  const accessToken = await accessTokenFor(integration);
   const calendarId = integration.calendar_id || "primary";
 
   const response = await fetch(
