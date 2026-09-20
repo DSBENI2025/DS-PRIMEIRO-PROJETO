@@ -10,8 +10,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
     }
 
-    const professionalId =
+    let professionalId =
       req.nextUrl.searchParams.get("professionalId") || null;
+
+    if (auth.role === "professional") {
+      if (!auth.professionalId) {
+        return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+      }
+      professionalId = auth.professionalId;
+    }
     const supabase = getSupabaseAdmin();
 
     if (professionalId) {
