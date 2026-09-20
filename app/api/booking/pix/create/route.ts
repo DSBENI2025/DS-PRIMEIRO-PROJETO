@@ -217,7 +217,10 @@ export async function POST(req: NextRequest) {
 
     holdId = String(createdHoldId);
 
-    const paymentClient = await getBusinessPaymentClient(businessId);\n    if (!paymentClient) {\n      throw new Error("Mercado Pago do estabelecimento não conectado.");\n    }
+    const paymentClient = await getBusinessPaymentClient(businessId);
+    if (!paymentClient) {
+      throw new Error("Mercado Pago do estabelecimento não conectado.");
+    }
 
     const payment = await paymentClient.create({
       body: {
