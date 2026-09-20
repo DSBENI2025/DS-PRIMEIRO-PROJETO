@@ -9,6 +9,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 1. `supabase/migrations/20260920_000001_baseline.sql`
 2. `supabase/migrations/20260920_000002_professional_hours.sql`
 3. `supabase/migrations/20260920_000003_professional_google_calendar.sql`
+4. `supabase/migrations/20260920_000004_team_members.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -97,7 +98,9 @@ O endpoint não expõe tokens nem valores secretos.
 8. conectar o Google Agenda geral
 9. conectar um Google Agenda próprio em pelo menos um profissional
 10. validar fallback do Google Agenda em outro profissional
-11. abrir o link público
+11. criar um convite de profissional, aceitar com outra conta e validar que ela só vê a própria agenda
+12. criar um convite de administrador e validar as permissões gerenciais
+13. abrir o link público
 12. criar agendamento
 13. testar conflito de horário
 14. testar cancelamento
