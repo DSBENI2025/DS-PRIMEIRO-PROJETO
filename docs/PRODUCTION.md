@@ -10,6 +10,7 @@ Para um projeto Supabase novo, aplique as migrations em ordem:
 2. `supabase/migrations/20260920_000002_professional_hours.sql`
 3. `supabase/migrations/20260920_000003_professional_google_calendar.sql`
 4. `supabase/migrations/20260920_000004_team_members.sql`
+5. `supabase/migrations/20260920_000005_schedule_blocks.sql`
 
 O arquivo `supabase/schema.sql` continua sendo a referência consolidada do schema.
 
@@ -104,8 +105,10 @@ O endpoint não expõe tokens nem valores secretos.
 14. escolher serviço, profissional e data e conferir se horários ocupados não aparecem
 15. criar um agendamento sem Pix e confirmar que o slot some
 16. gerar uma pré-reserva Pix e confirmar que o slot fica indisponível
-17. testar conflito com evento existente no Google Agenda
-18. testar cancelamento
+17. criar um bloqueio de horário e confirmar que o slot desaparece
+18. tentar bloquear um período com atendimento confirmado e validar a recusa
+19. testar conflito com evento existente no Google Agenda
+20. testar cancelamento
 19. testar Pix de sinal
 20. validar webhook
 21. validar WhatsApp com consentimento

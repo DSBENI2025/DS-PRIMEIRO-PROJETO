@@ -730,6 +730,20 @@ export default function PainelPage() {
           )}
 
           <section className="card">
+            <div className="row between">
+              <div>
+                <h2>Folgas, férias e bloqueios</h2>
+                <p>
+                  Bloqueie almoço, compromissos, férias ou períodos sem atendimento.
+                </p>
+              </div>
+              <a className="cta" href="/painel/bloqueios">
+                Gerenciar bloqueios
+              </a>
+            </div>
+          </section>
+
+          <section className="card">
             <h2>Agendamentos recentes e próximos</h2>
             <div className="list">
               {appointments.length === 0 && <p>Nenhum agendamento futuro.</p>}

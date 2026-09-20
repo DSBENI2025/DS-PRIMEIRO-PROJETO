@@ -1,7 +1,10 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
-import { getEffectiveWorkingHours } from "@/lib/availability-server";
+import {
+  getEffectiveWorkingHours,
+  isScheduleBlocked,
+} from "@/lib/availability-server";
 import { isGoogleCalendarBusy } from "@/lib/google-calendar";
 import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { syncBookingPayment } from "@/lib/booking-payment-sync";
@@ -165,6 +168,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const blocked = await isScheduleBlocked({
+      businessId,
+      professionalId,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+    });
+
+    if (blocked) {
+      return NextResponse.json(
+        { error: "Este horário está bloqueado na agenda." },
+        { status: 409 }
+      );
+    }
+
     try {
       const googleBusy = await isGoogleCalendarBusy(
         businessId,
@@ -211,7 +228,10 @@ export async function POST(req: NextRequest) {
     );
 
     if (holdError || !createdHoldId) {
-      if (holdError?.message?.includes("slot_unavailable")) {
+      if (
+        holdError?.message?.includes("slot_unavailable") ||
+        holdError?.message?.includes("schedule_blocked")
+      ) {
         return NextResponse.json(
           { error: "Esse horário acabou de ser reservado. Escolha outro." },
           { status: 409 }
