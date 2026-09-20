@@ -21,6 +21,8 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - prevenção de conflito de horário por profissional
 - painel com próximos agendamentos
 - reagendamento com revalidação completa de disponibilidade
+- autoatendimento do cliente por link seguro
+- consulta, cancelamento e reagendamento sem login
 - cancelamento de agendamento
 - cobrança recorrente via Mercado Pago
 - webhook com validação de assinatura
