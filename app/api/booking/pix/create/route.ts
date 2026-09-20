@@ -4,6 +4,7 @@ import { businessHasActiveSubscription } from "@/lib/business-access";
 import { isGoogleCalendarBusy } from "@/lib/google-calendar";
 import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { syncBookingPayment } from "@/lib/booking-payment-sync";
+import { notifyPixPending } from "@/lib/notifications";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 function toMinutes(value: string) {
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
     const customerPhone = String(body.customerPhone || "").trim();
     const customerEmail = String(body.customerEmail || "").trim().toLowerCase();
     const customerCpf = String(body.customerCpf || "").replace(/\D/g, "");
+    const whatsappOptIn = body.whatsappOptIn === true;
 
     if (
       !businessId ||
@@ -257,6 +259,8 @@ export async function POST(req: NextRequest) {
         provider_payment_id: String(payment.id),
         qr_code: transactionData?.qr_code || null,
         ticket_url: transactionData?.ticket_url || null,
+        whatsapp_opt_in: whatsappOptIn,
+        whatsapp_consent_at: whatsappOptIn ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", holdId);
@@ -265,6 +269,12 @@ export async function POST(req: NextRequest) {
 
     if (payment.status === "approved") {
       await syncBookingPayment(String(payment.id));
+    } else {
+      try {
+        await notifyPixPending(holdId);
+      } catch (error) {
+        console.error("Pix criado, mas aviso WhatsApp falhou", error);
+      }
     }
 
     return NextResponse.json({

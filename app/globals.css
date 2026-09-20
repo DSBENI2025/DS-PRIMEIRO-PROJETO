@@ -82,3 +82,9 @@ p { color: #555; line-height: 1.55; }
   .chart-row { grid-template-columns: 50px 1fr; }
   .chart-row strong { grid-column: 2; }
 }
+
+.consent-row { align-items: flex-start; line-height: 1.45; font-size: 14px; color: #555; }
+.status-pill { display: inline-flex; align-items: center; padding: 7px 10px; border-radius: 999px; background: #fff7ed; color: #9a3412; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.status-pill.ok { background: #eef9f0; color: #166534; }
+.appointment-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.compact-action { padding: 8px 10px; font-size: 13px; }

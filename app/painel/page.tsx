@@ -10,6 +10,9 @@ type Business = {
   phone: string | null;
   deposit_enabled: boolean;
   deposit_percent: number;
+  whatsapp_enabled: boolean;
+  whatsapp_reminder_minutes: number;
+  whatsapp_followup_enabled: boolean;
 };
 type Service = { id: string; name: string; duration_minutes: number; price_cents: number; active: boolean };
 type Professional = { id: string; name: string; active: boolean };
@@ -38,6 +41,10 @@ export default function PainelPage() {
   const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
   const [depositEnabled, setDepositEnabled] = useState(true);
   const [depositPercent, setDepositPercent] = useState(50);
+  const [whatsappConfigured, setWhatsappConfigured] = useState(false);
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappReminderMinutes, setWhatsappReminderMinutes] = useState(60);
+  const [whatsappFollowupEnabled, setWhatsappFollowupEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
 
   const canUse = subscriptionStatus === "authorized";
@@ -53,7 +60,7 @@ export default function PainelPage() {
 
     const { data: businessData } = await supabase
       .from("businesses")
-      .select("id,name,slug,phone,deposit_enabled,deposit_percent")
+      .select("id,name,slug,phone,deposit_enabled,deposit_percent,whatsapp_enabled,whatsapp_reminder_minutes,whatsapp_followup_enabled")
       .limit(1)
       .maybeSingle();
 
@@ -65,8 +72,15 @@ export default function PainelPage() {
     setBusiness(businessData);
     setDepositEnabled(Boolean(businessData.deposit_enabled));
     setDepositPercent(Number(businessData.deposit_percent || 50));
+    setWhatsappEnabled(Boolean(businessData.whatsapp_enabled));
+    setWhatsappReminderMinutes(
+      Number(businessData.whatsapp_reminder_minutes || 60)
+    );
+    setWhatsappFollowupEnabled(
+      Boolean(businessData.whatsapp_followup_enabled)
+    );
 
-    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse, mercadoPagoStatusResponse] = await Promise.all([
+    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse, mercadoPagoStatusResponse, whatsappStatusResponse] = await Promise.all([
       supabase.from("services").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("professionals").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("subscriptions").select("status").order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -74,7 +88,10 @@ export default function PainelPage() {
         .from("appointments")
         .select("id,customer_name,customer_phone,start_time,status,services(name),professionals(name)")
         .eq("business_id", businessData.id)
-        .gte("start_time", new Date().toISOString())
+        .gte(
+          "start_time",
+          new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        )
         .order("start_time")
         .limit(30),
       fetch("/api/google/status", {
@@ -83,6 +100,11 @@ export default function PainelPage() {
         },
       }),
       fetch("/api/mercadopago/status", {
+        headers: {
+          Authorization: "Bearer " + sessionData.session.access_token,
+        },
+      }),
+      fetch("/api/whatsapp/status", {
         headers: {
           Authorization: "Bearer " + sessionData.session.access_token,
         },
@@ -102,6 +124,11 @@ export default function PainelPage() {
     if (mercadoPagoStatusResponse.ok) {
       const mercadoPagoStatus = await mercadoPagoStatusResponse.json();
       setMercadoPagoConnected(Boolean(mercadoPagoStatus.connected));
+    }
+
+    if (whatsappStatusResponse.ok) {
+      const whatsappStatus = await whatsappStatusResponse.json();
+      setWhatsappConfigured(Boolean(whatsappStatus.configured));
     }
 
     setLoading(false);
@@ -301,6 +328,65 @@ export default function PainelPage() {
     await load();
   }
 
+  async function saveWhatsAppSettings() {
+    if (!business) return;
+
+    if (whatsappEnabled && !whatsappConfigured) {
+      setMessage(
+        "A integração WhatsApp da plataforma ainda não está configurada."
+      );
+      return;
+    }
+
+    const supabase = getSupabaseBrowser();
+    const { error } = await supabase
+      .from("businesses")
+      .update({
+        whatsapp_enabled: whatsappEnabled,
+        whatsapp_reminder_minutes: whatsappReminderMinutes,
+        whatsapp_followup_enabled: whatsappFollowupEnabled,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", business.id);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Configuração do WhatsApp salva.");
+    await load();
+  }
+
+  async function updateAppointmentStatus(
+    id: string,
+    status: "completed" | "no_show"
+  ) {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/appointments/status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ appointmentId: id, status }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(result.error || "Não foi possível atualizar o agendamento.");
+      return;
+    }
+
+    await load();
+  }
+
   async function subscribe() {
     const supabase = getSupabaseBrowser();
     const { data } = await supabase.auth.getSession();
@@ -410,6 +496,67 @@ export default function PainelPage() {
           <section className="card">
             <div className="row between">
               <div>
+                <h2>WhatsApp automático</h2>
+                <p>
+                  Envie confirmação, lembrete e pós-atendimento apenas para
+                  clientes que autorizarem as mensagens no momento da reserva.
+                </p>
+              </div>
+              <span className={whatsappConfigured ? "status-pill ok" : "status-pill"}>
+                {whatsappConfigured ? "Plataforma configurada" : "Aguardando configuração"}
+              </span>
+            </div>
+
+            <div className="deposit-settings">
+              <label className="toggle-row">
+                <input
+                  type="checkbox"
+                  checked={whatsappEnabled}
+                  disabled={!whatsappConfigured}
+                  onChange={(e) => setWhatsappEnabled(e.target.checked)}
+                />
+                Ativar mensagens automáticas deste negócio
+              </label>
+
+              <label>
+                Enviar lembrete com antecedência de
+                <select
+                  className="input"
+                  value={whatsappReminderMinutes}
+                  disabled={!whatsappEnabled}
+                  onChange={(e) =>
+                    setWhatsappReminderMinutes(Number(e.target.value))
+                  }
+                >
+                  <option value={30}>30 minutos</option>
+                  <option value={60}>1 hora</option>
+                  <option value={120}>2 horas</option>
+                  <option value={360}>6 horas</option>
+                  <option value={1440}>24 horas</option>
+                </select>
+              </label>
+
+              <label className="toggle-row">
+                <input
+                  type="checkbox"
+                  checked={whatsappFollowupEnabled}
+                  disabled={!whatsappEnabled}
+                  onChange={(e) =>
+                    setWhatsappFollowupEnabled(e.target.checked)
+                  }
+                />
+                Enviar mensagem após marcar o atendimento como concluído
+              </label>
+
+              <button className="cta" onClick={saveWhatsAppSettings}>
+                Salvar WhatsApp
+              </button>
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="row between">
+              <div>
                 <h2>Sinal via Pix</h2>
                 <p>
                   Quando ativado, serviços com valor só são confirmados depois
@@ -511,7 +658,7 @@ export default function PainelPage() {
           </div>
 
           <section className="card">
-            <h2>Próximos agendamentos</h2>
+            <h2>Agendamentos recentes e próximos</h2>
             <div className="list">
               {appointments.length === 0 && <p>Nenhum agendamento futuro.</p>}
               {appointments.map((appointment) => (
@@ -520,9 +667,33 @@ export default function PainelPage() {
                   <span>
                     {new Date(appointment.start_time).toLocaleString("pt-BR")} · {appointment.services?.name || "Serviço"} · {appointment.professionals?.name || "Profissional"} · {appointment.customer_phone}
                   </span>
-                  <button className="danger-link" onClick={() => cancelAppointment(appointment.id)}>
-                    Cancelar agendamento
-                  </button>
+                  <span>Status: {appointment.status}</span>
+                  {appointment.status === "confirmed" && (
+                  <div className="appointment-actions">
+                    <button
+                      className="secondary compact-action"
+                      onClick={() =>
+                        updateAppointmentStatus(appointment.id, "completed")
+                      }
+                    >
+                      Concluído
+                    </button>
+                    <button
+                      className="secondary compact-action"
+                      onClick={() =>
+                        updateAppointmentStatus(appointment.id, "no_show")
+                      }
+                    >
+                      Não compareceu
+                    </button>
+                    <button
+                      className="danger-link"
+                      onClick={() => cancelAppointment(appointment.id)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  )}
                 </div>
               ))}
             </div>

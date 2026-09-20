@@ -5,6 +5,7 @@ import {
   isGoogleCalendarBusy,
 } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { notifyBookingConfirmed } from "@/lib/notifications";
 
 function toMinutes(value: string) {
   const [hours, minutes] = value.slice(0, 5).split(":").map(Number);
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
     const customerName = String(body.customerName || "").trim();
     const customerPhone = String(body.customerPhone || "").trim();
     const customerEmail = String(body.customerEmail || "").trim();
+    const whatsappOptIn = body.whatsappOptIn === true;
 
     if (
       !businessId ||
@@ -211,6 +213,8 @@ export async function POST(req: NextRequest) {
         start_time: start.toISOString(),
         end_time: end.toISOString(),
         status: "confirmed",
+        whatsapp_opt_in: whatsappOptIn,
+        whatsapp_consent_at: whatsappOptIn ? new Date().toISOString() : null,
       })
       .select("id,start_time,end_time")
       .single();
@@ -242,6 +246,12 @@ export async function POST(req: NextRequest) {
       }
     } catch (error) {
       console.error("Agendamento criado, mas evento Google falhou", error);
+    }
+
+    try {
+      await notifyBookingConfirmed(appointment.id);
+    } catch (error) {
+      console.error("Agendamento criado, mas confirmação WhatsApp falhou", error);
     }
 
     return NextResponse.json({

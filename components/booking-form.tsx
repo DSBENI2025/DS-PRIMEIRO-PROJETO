@@ -92,6 +92,7 @@ export default function BookingForm({
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerCpf, setCustomerCpf] = useState("");
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -235,6 +236,7 @@ export default function BookingForm({
             customerPhone,
             customerEmail,
             customerCpf: customerCpf.replace(/\D/g, ""),
+            whatsappOptIn,
           }),
         }
       );
@@ -375,6 +377,27 @@ export default function BookingForm({
           value={customerPhone}
           onChange={(e) => setCustomerPhone(e.target.value)}
         />
+        <label className="toggle-row consent-row">
+          <input
+            type="checkbox"
+            checked={whatsappOptIn}
+            disabled={formLocked}
+            onChange={(e) => setWhatsappOptIn(e.target.checked)}
+          />
+          Quero receber no WhatsApp mensagens sobre este agendamento, como
+          confirmação, lembrete e aviso de pagamento.
+        </label>
+
+        <label className="toggle-row consent-row">
+          <input
+            type="checkbox"
+            checked={whatsappOptIn}
+            disabled={formLocked}
+            onChange={(e) => setWhatsappOptIn(e.target.checked)}
+          />
+          Quero receber no WhatsApp mensagens sobre este agendamento, como confirmação, lembrete e aviso de pagamento.
+        </label>
+
         <input
           className="input"
           type="email"
