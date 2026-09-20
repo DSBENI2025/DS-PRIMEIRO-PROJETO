@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     const customerName = String(body.customerName || "").trim();
     const customerPhone = String(body.customerPhone || "").trim();
     const customerEmail = String(body.customerEmail || "").trim().toLowerCase();
+    const customerCpf = String(body.customerCpf || "").replace(/\D/g, "");
 
     if (
       !businessId ||
@@ -35,10 +36,11 @@ export async function POST(req: NextRequest) {
       !customerName ||
       !customerPhone ||
       !customerEmail ||
-      !/^\S+@\S+\.\S+$/.test(customerEmail)
+      !/^\S+@\S+\.\S+$/.test(customerEmail) ||
+      customerCpf.length !== 11
     ) {
       return NextResponse.json(
-        { error: "Preencha os dados do agendamento, incluindo um e-mail válido." },
+        { error: "Preencha os dados do agendamento, incluindo e-mail e CPF válidos." },
         { status: 400 }
       );
     }
@@ -230,6 +232,10 @@ export async function POST(req: NextRequest) {
         payment_method_id: "pix",
         payer: {
           email: customerEmail,
+          identification: {
+            type: "CPF",
+            number: customerCpf,
+          },
         },
         external_reference: externalReference,
         date_of_expiration: expiresAt.toISOString(),
