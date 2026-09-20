@@ -34,7 +34,8 @@ export default function PainelPage() {
   const [price, setPrice] = useState("0");
   const [professionalName, setProfessionalName] = useState("");
   const [message, setMessage] = useState("");
-  const [googleConnected, setGoogleConnected] = useState(false);\n  const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
   const [depositEnabled, setDepositEnabled] = useState(true);
   const [depositPercent, setDepositPercent] = useState(50);
   const [loading, setLoading] = useState(true);
