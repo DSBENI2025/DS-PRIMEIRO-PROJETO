@@ -651,6 +651,12 @@ export default function PainelPage() {
                   <div className="list-item" key={professional.id}>
                     <strong>{professional.name}</strong>
                     <span>Ativo</span>
+                    <a
+                      className="secondary compact-action"
+                      href={"/painel/profissionais/" + professional.id + "/horarios"}
+                    >
+                      Editar horários
+                    </a>
                   </div>
                 ))}
               </div>

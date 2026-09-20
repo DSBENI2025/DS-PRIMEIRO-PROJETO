@@ -43,34 +43,47 @@ export default async function BookingPage({
     );
   }
 
-  const [servicesResult, professionalsResult, hoursResult, mercadoPagoResult] = await Promise.all([
-    supabase
-      .from("services")
-      .select("id,name,duration_minutes,price_cents")
-      .eq("business_id", business.id)
-      .eq("active", true)
-      .order("name"),
-    supabase
-      .from("professionals")
-      .select("id,name")
-      .eq("business_id", business.id)
-      .eq("active", true)
-      .order("name"),
-    supabase
-      .from("business_hours")
-      .select("weekday,opens_at,closes_at,is_closed")
-      .eq("business_id", business.id)
-      .order("weekday"),
-    supabase
-      .from("mercadopago_integrations")
-      .select("id")
-      .eq("business_id", business.id)
-      .maybeSingle(),
-  ]);
+  const [servicesResult, professionalsResult, hoursResult, mercadoPagoResult] =
+    await Promise.all([
+      supabase
+        .from("services")
+        .select("id,name,duration_minutes,price_cents")
+        .eq("business_id", business.id)
+        .eq("active", true)
+        .order("name"),
+      supabase
+        .from("professionals")
+        .select("id,name")
+        .eq("business_id", business.id)
+        .eq("active", true)
+        .order("name"),
+      supabase
+        .from("business_hours")
+        .select("weekday,opens_at,closes_at,is_closed")
+        .eq("business_id", business.id)
+        .order("weekday"),
+      supabase
+        .from("mercadopago_integrations")
+        .select("id")
+        .eq("business_id", business.id)
+        .maybeSingle(),
+    ]);
 
   const services = servicesResult.data || [];
   const professionals = professionalsResult.data || [];
   const hours = hoursResult.data || [];
+  const professionalIds = professionals.map((item) => item.id);
+
+  const professionalHours =
+    professionalIds.length > 0
+      ? (
+          await supabase
+            .from("professional_hours")
+            .select("professional_id,weekday,opens_at,closes_at,is_closed")
+            .in("professional_id", professionalIds)
+            .order("weekday")
+        ).data || []
+      : [];
 
   if (services.length === 0 || professionals.length === 0) {
     return (
@@ -91,6 +104,7 @@ export default async function BookingPage({
         services={services}
         professionals={professionals}
         hours={hours}
+        professionalHours={professionalHours}
         depositEnabled={Boolean(business.deposit_enabled)}
         depositPercent={Number(business.deposit_percent || 50)}
         paymentReady={Boolean(mercadoPagoResult.data)}

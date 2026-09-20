@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  resolveWorkingHour,
+  type ProfessionalWorkingHour,
+} from "@/lib/scheduling-hours";
 
 type Service = {
   id: string;
@@ -38,6 +42,7 @@ type Props = {
   services: Service[];
   professionals: Professional[];
   hours: BusinessHour[];
+  professionalHours: ProfessionalWorkingHour[];
   depositEnabled: boolean;
   depositPercent: number;
   paymentReady: boolean;
@@ -76,6 +81,7 @@ export default function BookingForm({
   services,
   professionals,
   hours,
+  professionalHours,
   depositEnabled,
   depositPercent,
   paymentReady,
@@ -110,7 +116,12 @@ export default function BookingForm({
     if (!date || !selectedService) return [];
 
     const weekday = new Date(date + "T12:00:00").getDay();
-    const day = hours.find((item) => item.weekday === weekday);
+    const day = resolveWorkingHour({
+      weekday,
+      professionalId,
+      businessHours: hours,
+      professionalHours,
+    });
 
     if (!day || day.is_closed || !day.opens_at || !day.closes_at) return [];
 
@@ -127,7 +138,7 @@ export default function BookingForm({
     }
 
     return result;
-  }, [date, hours, selectedService]);
+  }, [date, hours, professionalHours, professionalId, selectedService]);
 
   useEffect(() => {
     if (!payment?.reservationId || success) return;
@@ -320,7 +331,11 @@ export default function BookingForm({
             className="input"
             value={professionalId}
             disabled={formLocked}
-            onChange={(e) => setProfessionalId(e.target.value)}
+            onChange={(e) => {
+              setProfessionalId(e.target.value);
+              setTime("");
+              resetSelection();
+            }}
           >
             {professionals.map((professional) => (
               <option key={professional.id} value={professional.id}>
@@ -388,15 +403,7 @@ export default function BookingForm({
           confirmação, lembrete e aviso de pagamento.
         </label>
 
-        <label className="toggle-row consent-row">
-          <input
-            type="checkbox"
-            checked={whatsappOptIn}
-            disabled={formLocked}
-            onChange={(e) => setWhatsappOptIn(e.target.checked)}
-          />
-          Quero receber no WhatsApp mensagens sobre este agendamento, como confirmação, lembrete e aviso de pagamento.
-        </label>
+        
 
         <input
           className="input"

@@ -9,7 +9,8 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - slug público por estabelecimento
 - serviços com duração e preço
 - profissionais
-- horários de atendimento por dia da semana
+- horários gerais do estabelecimento
+- horários individuais por profissional, com fallback para o horário geral
 - página pública em `/agendar/[slug]`
 - criação de agendamento sem login do cliente final
 - prevenção de conflito de horário por profissional
@@ -145,7 +146,7 @@ Os lembretes são processados pelo workflow `.github/workflows/notifications.yml
 2. cadastra o negócio
 3. assina o Agenda Pro
 4. cadastra serviços e profissionais
-5. ajusta horários
+5. ajusta os horários gerais e, se necessário, a agenda individual de cada profissional
 6. compartilha o link público
 7. recebe os agendamentos no painel
 
