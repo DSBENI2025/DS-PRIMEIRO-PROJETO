@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
+import { getEffectiveWorkingHours } from "@/lib/availability-server";
 import { isGoogleCalendarBusy } from "@/lib/google-calendar";
 import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { syncBookingPayment } from "@/lib/booking-payment-sync";
