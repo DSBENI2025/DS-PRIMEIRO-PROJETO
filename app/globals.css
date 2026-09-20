@@ -108,3 +108,15 @@ p { color: #555; line-height: 1.55; }
 @media (max-width: 620px) {
   .block-form-grid { grid-template-columns: 1fr; }
 }
+
+.customer-portal { max-width: 760px; margin: 0 auto; }
+.appointment-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 20px 0; }
+.appointment-summary > div { display: grid; gap: 6px; padding: 16px; border: 1px solid #ececef; border-radius: 12px; }
+.appointment-summary span { color: #666; font-size: 13px; }
+.self-service-form { display: grid; gap: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+.danger-button { padding: 12px 16px; border: 0; border-radius: 10px; background: #991b1b; color: white; font-weight: 700; cursor: pointer; }
+.danger-button:disabled { opacity: .6; cursor: not-allowed; }
+.manage-booking-link { text-decoration: none; width: fit-content; display: inline-block; }
+@media (max-width: 620px) {
+  .appointment-summary { grid-template-columns: 1fr; }
+}
