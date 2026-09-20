@@ -16,6 +16,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const professionalId =
+      typeof body.professionalId === "string" && body.professionalId
+        ? body.professionalId
+        : null;
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
@@ -24,6 +30,23 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin();
+
+    if (professionalId) {
+      const { data: professional } = await supabase
+        .from("professionals")
+        .select("id")
+        .eq("id", professionalId)
+        .eq("business_id", auth.business.id)
+        .maybeSingle();
+
+      if (!professional) {
+        return NextResponse.json(
+          { error: "Profissional não encontrado." },
+          { status: 404 }
+        );
+      }
+    }
+
     const state = randomUUID();
 
     await supabase
@@ -35,6 +58,7 @@ export async function POST(req: NextRequest) {
       state,
       user_id: auth.user.id,
       business_id: auth.business.id,
+      professional_id: professionalId,
       provider: "google",
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     });
