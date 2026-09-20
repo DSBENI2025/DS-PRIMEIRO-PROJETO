@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const { data: appointment } = await supabase
       .from("appointments")
-      .select("id,status,start_time")
+      .select("id,status,start_time,professional_id")
       .eq("id", appointmentId)
       .eq("business_id", auth.business.id)
       .maybeSingle();
@@ -38,11 +38,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (new Date(appointment.start_time).getTime() > Date.now()) {
-      return NextResponse.json(
-        { error: "O horário ainda não aconteceu." },
-        { status: 409 }
-      );
+    if (
+      auth.role === "professional" &&
+      appointment.professional_id !== auth.professionalId
+    ) {
+      return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
     }
 
     if (new Date(appointment.start_time).getTime() > Date.now()) {
