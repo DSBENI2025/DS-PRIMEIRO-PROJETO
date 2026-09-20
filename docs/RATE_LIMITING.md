@@ -43,6 +43,8 @@ A função atômica é:
 
 `consume_rate_limit(key_hash, action, max_requests, window_seconds)`
 
+Ela roda como `SECURITY INVOKER` e só pode ser executada pelo `service_role`. Portanto, usa os privilégios do servidor sem elevar permissões desnecessariamente.
+
 Isso funciona em ambiente serverless sem depender da memória de uma instância específica.
 
 Buckets expirados são removidos durante novas chamadas.
