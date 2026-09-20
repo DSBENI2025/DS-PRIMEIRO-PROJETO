@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
 import { getEffectiveWorkingHours } from "@/lib/availability-server";
-import { getEffectiveWorkingHours } from "@/lib/availability-server";
 import {
   createGoogleCalendarEvent,
   isGoogleCalendarBusy,
