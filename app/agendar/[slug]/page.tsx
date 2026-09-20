@@ -12,7 +12,7 @@ export default async function BookingPage({
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("id,name,slug,owner_id,active")
+    .select("id,name,slug,owner_id,active,deposit_enabled,deposit_percent")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -86,6 +86,8 @@ export default async function BookingPage({
         services={services}
         professionals={professionals}
         hours={hours}
+        depositEnabled={Boolean(business.deposit_enabled)}
+        depositPercent={Number(business.deposit_percent || 50)}
       />
     </main>
   );
