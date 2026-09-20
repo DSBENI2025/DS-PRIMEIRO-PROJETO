@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedBusiness } from "@/lib/auth-server";
-import { decryptSecret } from "@/lib/secret-crypto";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
@@ -49,22 +48,6 @@ export async function POST(req: NextRequest) {
 
     if (!integration) {
       return NextResponse.json({ disconnected: true });
-    }
-
-    if (integration.refresh_token_encrypted) {
-      try {
-        await fetch("https://oauth2.googleapis.com/revoke", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            token: decryptSecret(integration.refresh_token_encrypted),
-          }),
-        });
-      } catch (error) {
-        console.error("Falha ao revogar token Google", error);
-      }
     }
 
     const { error } = await supabase
