@@ -10,6 +10,7 @@ import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { syncBookingPayment } from "@/lib/booking-payment-sync";
 import { notifyPixPending } from "@/lib/notifications";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { consumeRateLimit, rateLimitExceeded } from "@/lib/rate-limit";
 
 function toMinutes(value: string) {
   const [hours, minutes] = value.slice(0, 5).split(":").map(Number);
@@ -20,6 +21,12 @@ export async function POST(req: NextRequest) {
   let holdId: string | null = null;
 
   try {
+    const rateLimit = await consumeRateLimit(req, "pix_create", 6, 600);
+
+    if (!rateLimit.allowed) {
+      return rateLimitExceeded(rateLimit);
+    }
+
     const body = await req.json();
 
     const businessId = String(body.businessId || "");
