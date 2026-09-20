@@ -183,22 +183,22 @@ export async function isGoogleCalendarBusy(
   return busy.length > 0;
 }
 
-export async function isGoogleCalendarBusyExceptEvent(
+export async function getGoogleCalendarBusyIntervalsExceptEvent(
   businessId: string,
   startTime: string,
   endTime: string,
   professionalId?: string | null,
   excludedEventId?: string | null
-) {
+): Promise<GoogleBusyInterval[]> {
   const integration = await getEffectiveIntegration(
     businessId,
     professionalId
   );
 
-  if (!integration) return false;
+  if (!integration) return [];
 
   if (!excludedEventId) {
-    return isGoogleCalendarBusy(
+    return getGoogleCalendarBusyIntervals(
       businessId,
       startTime,
       endTime,
@@ -209,6 +209,7 @@ export async function isGoogleCalendarBusyExceptEvent(
   const accessToken = await accessTokenFor(integration);
   const calendarId = integration.calendar_id || "primary";
   let pageToken = "";
+  const busy: GoogleBusyInterval[] = [];
 
   do {
     const params = new URLSearchParams({
@@ -239,23 +240,57 @@ export async function isGoogleCalendarBusyExceptEvent(
       throw new Error("Falha ao consultar eventos do Google Agenda.");
     }
 
-    const occupied = (result.items || []).some(
-      (item: {
-        id?: string;
-        status?: string;
-        transparency?: string;
-      }) =>
-        item.id !== excludedEventId &&
-        item.status !== "cancelled" &&
-        item.transparency !== "transparent"
-    );
+    for (const item of result.items || []) {
+      if (
+        item.id === excludedEventId ||
+        item.status === "cancelled" ||
+        item.transparency === "transparent"
+      ) {
+        continue;
+      }
 
-    if (occupied) return true;
+      const startValue = item.start?.dateTime
+        ? String(item.start.dateTime)
+        : item.start?.date
+          ? String(item.start.date) + "T00:00:00-03:00"
+          : null;
+
+      const endValue = item.end?.dateTime
+        ? String(item.end.dateTime)
+        : item.end?.date
+          ? String(item.end.date) + "T00:00:00-03:00"
+          : null;
+
+      if (startValue && endValue) {
+        busy.push({
+          start: startValue,
+          end: endValue,
+        });
+      }
+    }
 
     pageToken = String(result.nextPageToken || "");
   } while (pageToken);
 
-  return false;
+  return busy;
+}
+
+export async function isGoogleCalendarBusyExceptEvent(
+  businessId: string,
+  startTime: string,
+  endTime: string,
+  professionalId?: string | null,
+  excludedEventId?: string | null
+) {
+  const busy = await getGoogleCalendarBusyIntervalsExceptEvent(
+    businessId,
+    startTime,
+    endTime,
+    professionalId,
+    excludedEventId
+  );
+
+  return busy.length > 0;
 }
 
 export async function updateGoogleCalendarEvent(args: {
