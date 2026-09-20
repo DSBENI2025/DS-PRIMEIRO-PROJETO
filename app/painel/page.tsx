@@ -455,14 +455,28 @@ export default function PainelPage() {
         <div className="row between">
           <div>
             <strong>Assinatura: {canUse ? "ativa" : subscriptionStatus}</strong>
-            <p>{canUse ? "Seu painel está liberado." : "Ative sua assinatura para cadastrar serviços, profissionais e receber agendamentos."}</p>
+            <p>
+              {canUse
+                ? role === "professional"
+                  ? "Seu acesso profissional está liberado."
+                  : "Seu painel está liberado."
+                : canManageBilling
+                  ? "Ative sua assinatura para liberar o Agenda Pro."
+                  : "A assinatura do estabelecimento precisa ser regularizada pelo proprietário."}
+            </p>
           </div>
-          {!canUse && <button className="cta" onClick={subscribe}>Assinar R$ 39,90/mês</button>}
+          {!canUse && canManageBilling && (
+            <button className="cta" onClick={subscribe}>
+              Assinar R$ 39,90/mês
+            </button>
+          )}
         </div>
       </section>
 
       {canUse && (
         <>
+          {canManage && (
+            <>
           <section className="card">
             <div className="row between">
               <div>
@@ -679,6 +693,41 @@ export default function PainelPage() {
               </div>
             </section>
           </div>
+
+          <section className="card">
+            <div className="row between">
+              <div>
+                <h2>Equipe e permissões</h2>
+                <p>
+                  Convide administradores e profissionais e controle o acesso de cada pessoa.
+                </p>
+              </div>
+              <a className="cta" href="/painel/equipe">
+                Gerenciar equipe
+              </a>
+            </div>
+          </section>
+            </>
+          )}
+
+          {role === "professional" && professionalId && (
+            <section className="card">
+              <div className="row between">
+                <div>
+                  <h2>Minha agenda profissional</h2>
+                  <p>
+                    Ajuste seus horários e conecte seu Google Agenda individual.
+                  </p>
+                </div>
+                <a
+                  className="cta"
+                  href={"/painel/profissionais/" + professionalId + "/horarios"}
+                >
+                  Abrir meus horários
+                </a>
+              </div>
+            </section>
+          )}
 
           <section className="card">
             <h2>Agendamentos recentes e próximos</h2>
