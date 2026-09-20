@@ -35,8 +35,10 @@ O workflow:
 4. executa `vercel pull --environment=production`;
 5. gera o artefato com `vercel build --prod`;
 6. publica com `vercel deploy --prebuilt --prod`;
-7. consulta `/api/health`;
-8. falha se variáveis, banco ou schema/migrations estiverem incompletos.
+7. consulta `/api/health` e valida `status=ok`, banco, schema e `missingTables=[]`;
+8. testa a landing page e a tela de login;
+9. valida os headers `X-Content-Type-Options`, `X-Frame-Options` e `Referrer-Policy`;
+10. falha o release se qualquer verificação pós-deploy falhar.
 
 A CLI da Vercel está fixada em `59.20.0` para evitar mudança inesperada do pipeline.
 
