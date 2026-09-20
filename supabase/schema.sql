@@ -596,8 +596,12 @@ create table if not exists public.notification_logs (
   status text not null
     check (status in ('processing','sent','failed','skipped')),
   error_message text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+alter table public.notification_logs
+  add column if not exists updated_at timestamptz not null default now();
 
 create unique index if not exists notification_logs_appointment_once_idx
 on public.notification_logs (appointment_id, notification_type)
