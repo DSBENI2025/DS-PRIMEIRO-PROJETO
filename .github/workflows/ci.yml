@@ -21,6 +21,7 @@ jobs:
       GOOGLE_CLIENT_SECRET: TEST_GOOGLE_CLIENT_SECRET
       GOOGLE_TOKEN_ENCRYPTION_KEY: test-encryption-key-32-characters-minimum
       TOKEN_ENCRYPTION_KEY: test-server-encryption-key-32-characters-minimum
+      RATE_LIMIT_SECRET: test-rate-limit-secret-32-characters-minimum
       MERCADO_PAGO_CLIENT_ID: TEST_MP_CLIENT_ID
       MERCADO_PAGO_CLIENT_SECRET: TEST_MP_CLIENT_SECRET
       WHATSAPP_GRAPH_VERSION: v99.0

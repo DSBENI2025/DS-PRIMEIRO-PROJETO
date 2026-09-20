@@ -26,6 +26,7 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - histórico/auditoria de criação, reagendamento, cancelamento e status
 - exportação CSV dos relatórios em 7, 30 ou 90 dias
 - preço histórico congelado por agendamento para relatórios financeiros
+- rate limit persistente nos endpoints públicos de agenda, Pix e autoatendimento
 - cancelamento de agendamento
 - cobrança recorrente via Mercado Pago
 - webhook com validação de assinatura

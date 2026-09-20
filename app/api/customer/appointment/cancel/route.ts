@@ -3,9 +3,16 @@ import { getAppointmentAccessByToken } from "@/lib/customer-appointment-access";
 import { recordAppointmentEvent } from "@/lib/appointment-history";
 import { deleteGoogleCalendarEvent } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { consumeRateLimit, rateLimitExceeded } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await consumeRateLimit(req, "customer_cancel", 10, 600);
+
+    if (!rateLimit.allowed) {
+      return rateLimitExceeded(rateLimit);
+    }
+
     const body = await req.json();
     const token = String(body.token || "");
     const access = await getAppointmentAccessByToken(token);

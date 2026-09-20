@@ -8,6 +8,7 @@ const groups = {
     "MERCADO_PAGO_WEBHOOK_SECRET",
     "MERCADO_PAGO_PLAN_ID",
     "TOKEN_ENCRYPTION_KEY",
+    "RATE_LIMIT_SECRET",
   ],
   googleCalendar: [
     "GOOGLE_CLIENT_ID",

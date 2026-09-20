@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureAppointmentAccessToken } from "@/lib/customer-appointment-access";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { consumeRateLimit, rateLimitExceeded } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   try {
+    const rateLimit = await consumeRateLimit(req, "pix_status", 240, 600);
+
+    if (!rateLimit.allowed) {
+      return rateLimitExceeded(rateLimit);
+    }
+
     const reservationId = req.nextUrl.searchParams.get("reservationId") || "";
 
     if (!reservationId) {

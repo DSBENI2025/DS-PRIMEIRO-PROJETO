@@ -17,6 +17,7 @@ import {
   updateGoogleCalendarEvent,
 } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { consumeRateLimit, rateLimitExceeded } from "@/lib/rate-limit";
 
 function toMinutes(value: string) {
   const [hours, minutes] = value.slice(0, 5).split(":").map(Number);
@@ -30,6 +31,12 @@ function one<T>(value: T | T[] | null): T | null {
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await consumeRateLimit(req, "customer_reschedule", 20, 600);
+
+    if (!rateLimit.allowed) {
+      return rateLimitExceeded(rateLimit);
+    }
+
     const body = await req.json();
     const token = String(body.token || "");
     const professionalId = String(body.professionalId || "");
