@@ -2,6 +2,7 @@ import {
   createCipheriv,
   createDecipheriv,
   createHash,
+  createSecretKey,
   randomBytes,
 } from "crypto";
 
@@ -14,7 +15,9 @@ function key() {
     throw new Error("TOKEN_ENCRYPTION_KEY deve ter pelo menos 32 caracteres.");
   }
 
-  return createHash("sha256").update(secret).digest();
+  return createSecretKey(
+    createHash("sha256").update(secret).digest()
+  );
 }
 
 export function encryptSecret(value: string) {
