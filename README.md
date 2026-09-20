@@ -94,6 +94,8 @@ Nunca publique valores reais dessas credenciais no repositório.
 
 Checklist completo em `docs/PRODUCTION.md`.
 
+Preflight de produção: `.github/workflows/release-preflight.yml`.
+
 Migrations do Supabase via GitHub Actions: `docs/SUPABASE_DEPLOY.md`.
 
 Deploy pela Vercel via GitHub Actions: `docs/VERCEL_DEPLOY.md`.

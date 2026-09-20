@@ -34,11 +34,12 @@ O workflow não usa `db reset --linked` e não inclui seed de produção.
 ## Ordem de lançamento
 
 1. Configure o projeto Supabase.
-2. Configure os secrets acima.
-3. Execute **Deploy Supabase migrations**.
-4. Configure as variáveis do Agenda Pro na Vercel.
-5. Execute **Deploy production to Vercel**.
-6. Verifique `GET /api/health`.
+2. Configure os secrets do GitHub Environment `production`.
+3. Execute **Production release preflight**.
+4. Só continue se o dry-run do banco e o build da Vercel passarem.
+5. Execute **Deploy Supabase migrations**.
+6. Execute **Deploy production to Vercel**.
+7. Verifique `GET /api/health`.
 
 O health check valida tabelas críticas das migrations. Se uma migration estiver ausente ou a Data API não permitir que a chave de servidor alcance uma tabela necessária, a resposta será HTTP 503.
 

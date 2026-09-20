@@ -161,11 +161,13 @@ Use o GitHub Environment `production` e não reutilize credenciais sensíveis de
 
 ## 9. Ordem de publicação
 
-1. Execute **Deploy Supabase migrations** no GitHub Actions.
-2. Confirme que `supabase migration list` terminou sem erro.
-3. Execute **Deploy production to Vercel**.
-4. O deploy consulta `/api/health` e falha se o schema estiver incompleto.
-5. Execute o checklist pós-deploy.
+1. Execute **Production release preflight** no GitHub Actions.
+2. O preflight deve validar secrets, `supabase db push --dry-run` e o build de produção da Vercel.
+3. Execute **Deploy Supabase migrations**.
+4. Confirme que `supabase migration list` terminou sem erro.
+5. Execute **Deploy production to Vercel**.
+6. O deploy consulta `/api/health` e falha se o schema estiver incompleto.
+7. Execute o checklist pós-deploy.
 
 ## 10. Regra de release
 
