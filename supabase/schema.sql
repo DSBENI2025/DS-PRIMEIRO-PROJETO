@@ -1359,3 +1359,8 @@ revoke execute on function public.reschedule_appointment(
 grant execute on function public.reschedule_appointment(
   uuid, uuid, timestamptz, timestamptz
 ) to service_role;
+
+alter table public.appointments
+  add column if not exists google_integration_id uuid
+    references public.calendar_integrations(id) on delete set null;
+
