@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const { data: appointment } = await supabase
       .from("appointments")
-      .select("id,status")
+      .select("id,status,start_time")
       .eq("id", appointmentId)
       .eq("business_id", auth.business.id)
       .maybeSingle();
@@ -35,6 +35,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Agendamento não encontrado." },
         { status: 404 }
+      );
+    }
+
+    if (new Date(appointment.start_time).getTime() > Date.now()) {
+      return NextResponse.json(
+        { error: "O horário ainda não aconteceu." },
+        { status: 409 }
       );
     }
 
