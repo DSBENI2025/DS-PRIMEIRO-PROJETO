@@ -111,18 +111,23 @@ export async function hasProfessionalGoogleCalendar(
   return Boolean(await getExactIntegration(businessId, professionalId));
 }
 
-export async function isGoogleCalendarBusy(
+export type GoogleBusyInterval = {
+  start: string;
+  end: string;
+};
+
+export async function getGoogleCalendarBusyIntervals(
   businessId: string,
   startTime: string,
   endTime: string,
   professionalId?: string | null
-) {
+): Promise<GoogleBusyInterval[]> {
   const integration = await getEffectiveIntegration(
     businessId,
     professionalId
   );
 
-  if (!integration) return false;
+  if (!integration) return [];
 
   const accessToken = await accessTokenFor(integration);
   const calendarId = integration.calendar_id || "primary";
@@ -150,6 +155,30 @@ export async function isGoogleCalendarBusy(
   }
 
   const busy = result.calendars?.[calendarId]?.busy || [];
+
+  return busy
+    .filter(
+      (item: { start?: string; end?: string }) =>
+        Boolean(item.start && item.end)
+    )
+    .map((item: { start: string; end: string }) => ({
+      start: item.start,
+      end: item.end,
+    }));
+}
+
+export async function isGoogleCalendarBusy(
+  businessId: string,
+  startTime: string,
+  endTime: string,
+  professionalId?: string | null
+) {
+  const busy = await getGoogleCalendarBusyIntervals(
+    businessId,
+    startTime,
+    endTime,
+    professionalId
+  );
 
   return busy.length > 0;
 }
