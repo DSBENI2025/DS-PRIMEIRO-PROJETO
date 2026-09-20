@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/supabase/database.types";
 
 export function getSupabaseBrowser() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,5 +11,5 @@ export function getSupabaseBrowser() {
     throw new Error("Supabase público não configurado.");
   }
 
-  return createClient(url, key);
+  return createClient<Database>(url, key);
 }
