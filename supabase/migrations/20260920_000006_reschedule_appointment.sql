@@ -1,3 +1,7 @@
+alter table public.appointments
+  add column if not exists google_integration_id uuid
+    references public.calendar_integrations(id) on delete set null;
+
 -- Atomic appointment rescheduling with conflict and hold protection.
 
 create or replace function public.reschedule_appointment(
