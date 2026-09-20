@@ -125,7 +125,9 @@ O endpoint não expõe tokens nem valores secretos.
 31. testar o mesmo fluxo após aprovação Pix
 32. abrir o histórico de um atendimento e validar criação/reagendamento/cancelamento/status
 33. validar que profissional só acessa histórico dos próprios atendimentos
-34. consultar `/api/health`
+34. exportar CSV em 7, 30 e 90 dias e abrir o arquivo em uma planilha
+35. validar que profissional não consegue exportar relatório global
+36. consultar `/api/health`
 
 ## 8. GitHub Actions Secrets
 
