@@ -557,3 +557,145 @@ with check (
     where b.id = appointments.business_id and b.owner_id = (select auth.uid())
   )
 );
+
+alter table public.businesses
+  add column if not exists whatsapp_enabled boolean not null default false,
+  add column if not exists whatsapp_reminder_minutes integer not null default 60,
+  add column if not exists whatsapp_followup_enabled boolean not null default true;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'businesses_whatsapp_reminder_minutes_check'
+  ) then
+    alter table public.businesses
+      add constraint businesses_whatsapp_reminder_minutes_check
+      check (whatsapp_reminder_minutes between 15 and 1440);
+  end if;
+end $$;
+
+alter table public.appointments
+  add column if not exists whatsapp_opt_in boolean not null default false,
+  add column if not exists whatsapp_consent_at timestamptz;
+
+alter table public.booking_payments
+  add column if not exists whatsapp_opt_in boolean not null default false,
+  add column if not exists whatsapp_consent_at timestamptz;
+
+create table if not exists public.notification_logs (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  appointment_id uuid null references public.appointments(id) on delete cascade,
+  booking_payment_id uuid null references public.booking_payments(id) on delete cascade,
+  channel text not null default 'whatsapp',
+  notification_type text not null
+    check (notification_type in ('pix_pending','booking_confirmed','reminder','followup')),
+  recipient text not null,
+  provider_message_id text,
+  status text not null
+    check (status in ('sent','failed','skipped')),
+  error_message text,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists notification_logs_appointment_once_idx
+on public.notification_logs (appointment_id, notification_type)
+where appointment_id is not null;
+
+create unique index if not exists notification_logs_payment_once_idx
+on public.notification_logs (booking_payment_id, notification_type)
+where booking_payment_id is not null;
+
+create index if not exists notification_logs_business_idx
+on public.notification_logs (business_id, created_at desc);
+
+alter table public.notification_logs enable row level security;
+revoke all on public.notification_logs from anon, authenticated;
+grant select, insert, update, delete on public.notification_logs to service_role;
+
+create or replace function public.finalize_booking_payment(
+  p_provider_payment_id text,
+  p_paid_at timestamptz default now()
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_payment public.booking_payments%rowtype;
+  v_appointment_id uuid;
+begin
+  select *
+  into v_payment
+  from public.booking_payments
+  where provider_payment_id = p_provider_payment_id
+  for update;
+
+  if not found then
+    raise exception 'booking_payment_not_found';
+  end if;
+
+  if v_payment.appointment_id is not null then
+    return v_payment.appointment_id;
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(v_payment.professional_id::text, 0));
+
+  if exists (
+    select 1
+    from public.appointments a
+    where a.professional_id = v_payment.professional_id
+      and a.status <> 'cancelled'
+      and a.start_time < v_payment.end_time
+      and a.end_time > v_payment.start_time
+  ) then
+    update public.booking_payments
+    set status = 'conflict', updated_at = now()
+    where id = v_payment.id;
+
+    raise exception 'slot_conflict_after_payment';
+  end if;
+
+  insert into public.appointments (
+    business_id,
+    service_id,
+    professional_id,
+    customer_name,
+    customer_phone,
+    customer_email,
+    start_time,
+    end_time,
+    status,
+    booking_payment_id,
+    whatsapp_opt_in,
+    whatsapp_consent_at
+  )
+  values (
+    v_payment.business_id,
+    v_payment.service_id,
+    v_payment.professional_id,
+    v_payment.customer_name,
+    v_payment.customer_phone,
+    v_payment.customer_email,
+    v_payment.start_time,
+    v_payment.end_time,
+    'confirmed',
+    v_payment.id,
+    v_payment.whatsapp_opt_in,
+    v_payment.whatsapp_consent_at
+  )
+  returning id into v_appointment_id;
+
+  update public.booking_payments
+  set
+    status = 'approved',
+    appointment_id = v_appointment_id,
+    paid_at = p_paid_at,
+    updated_at = now()
+  where id = v_payment.id;
+
+  return v_appointment_id;
+end;
+$$;
