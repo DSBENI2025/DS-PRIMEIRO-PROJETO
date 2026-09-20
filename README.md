@@ -35,6 +35,7 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - RLS no Supabase
 - CI no GitHub Actions
 - preflight de produção e smoke tests automáticos pós-deploy
+- CI bloqueando arquivos locais/sensíveis rastreados acidentalmente
 - conexão OAuth com Google Agenda geral
 - Google Agenda individual por profissional, com fallback para o geral
 - consulta de disponibilidade no Google Agenda efetivo

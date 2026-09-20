@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "check:env": "node scripts/check-env.mjs"
+    "check:env": "node scripts/check-env.mjs",
+    "check:sensitive-files": "node scripts/check-sensitive-files.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",

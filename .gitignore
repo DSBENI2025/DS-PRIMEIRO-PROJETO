@@ -1,6 +1,25 @@
 node_modules
 .next
+
+# Local environment files
 .env
-.env.local
+.env.*
+!.env.example
+
+# Deployment/local tool state
 .vercel
+supabase/.temp
+.supabase
+
+# Logs and local OS files
 *.log
+.DS_Store
+
+# Private key/certificate material
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
