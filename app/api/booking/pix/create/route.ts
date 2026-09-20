@@ -217,9 +217,6 @@ export async function POST(req: NextRequest) {
 
     holdId = String(createdHoldId);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL não configurado.");
-
     const paymentClient = await getBusinessPaymentClient(businessId);\n    if (!paymentClient) {\n      throw new Error("Mercado Pago do estabelecimento não conectado.");\n    }
 
     const payment = await paymentClient.create({
@@ -233,7 +230,6 @@ export async function POST(req: NextRequest) {
         },
         external_reference: externalReference,
         date_of_expiration: expiresAt.toISOString(),
-        notification_url: appUrl + "/api/webhooks/mercadopago",
       },
       requestOptions: {
         idempotencyKey: holdId,
