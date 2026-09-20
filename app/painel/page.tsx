@@ -27,6 +27,7 @@ export default function PainelPage() {
   const [price, setPrice] = useState("0");
   const [professionalName, setProfessionalName] = useState("");
   const [message, setMessage] = useState("");
+  const [googleConnected, setGoogleConnected] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const canUse = subscriptionStatus === "authorized";
@@ -53,7 +54,7 @@ export default function PainelPage() {
 
     setBusiness(businessData);
 
-    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult] = await Promise.all([
+    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse] = await Promise.all([
       supabase.from("services").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("professionals").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("subscriptions").select("status").order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -64,12 +65,23 @@ export default function PainelPage() {
         .gte("start_time", new Date().toISOString())
         .order("start_time")
         .limit(30),
+      fetch("/api/google/status", {
+        headers: {
+          Authorization: "Bearer " + sessionData.session.access_token,
+        },
+      }),
     ]);
 
     setServices((servicesResult.data || []) as Service[]);
     setProfessionals((professionalsResult.data || []) as Professional[]);
     setSubscriptionStatus(subscriptionResult.data?.status || "pending");
     setAppointments((appointmentsResult.data || []) as unknown as Appointment[]);
+
+    if (googleStatusResponse.ok) {
+      const googleStatus = await googleStatusResponse.json();
+      setGoogleConnected(Boolean(googleStatus.connected));
+    }
+
     setLoading(false);
   }
 
@@ -111,13 +123,76 @@ export default function PainelPage() {
 
   async function cancelAppointment(id: string) {
     const supabase = getSupabaseBrowser();
-    const { error } = await supabase
-      .from("appointments")
-      .update({ status: "cancelled" })
-      .eq("id", id);
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
 
-    if (error) return setMessage(error.message);
+    if (!token) return;
+
+    const response = await fetch("/api/appointments/cancel", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ appointmentId: id }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(result.error || "Não foi possível cancelar.");
+      return;
+    }
+
     await load();
+  }
+
+  async function connectGoogle() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/google/connect", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(result.error || "Não foi possível conectar o Google Agenda.");
+      return;
+    }
+
+    window.location.href = result.authorizationUrl;
+  }
+
+  async function disconnectGoogle() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/google/disconnect", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(result.error || "Não foi possível desconectar o Google Agenda.");
+      return;
+    }
+
+    setGoogleConnected(false);
   }
 
   async function subscribe() {
@@ -179,6 +254,28 @@ export default function PainelPage() {
 
       {canUse && (
         <>
+          <section className="card">
+            <div className="row between">
+              <div>
+                <h2>Google Agenda</h2>
+                <p>
+                  {googleConnected
+                    ? "Conectado. Novos agendamentos são enviados ao seu calendário e a disponibilidade é consultada antes da confirmação."
+                    : "Conecte seu Google Agenda para sincronizar compromissos automaticamente."}
+                </p>
+              </div>
+              {googleConnected ? (
+                <button className="secondary" onClick={disconnectGoogle}>
+                  Desconectar
+                </button>
+              ) : (
+                <button className="cta" onClick={connectGoogle}>
+                  Conectar Google Agenda
+                </button>
+              )}
+            </div>
+          </section>
+
           <section className="card">
             <div className="row between">
               <div>
