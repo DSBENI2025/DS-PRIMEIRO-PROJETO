@@ -325,7 +325,7 @@ export default function BookingForm({
     }
   }
 
-  const formLocked = payment?.status === "pending";
+  const formLocked = payment?.status === "pending" || success;
 
   return (
     <div className="card">
@@ -478,7 +478,7 @@ export default function BookingForm({
           </div>
         )}
 
-        {!payment && (
+        {!payment && !success && (
           <button
             className="cta"
             onClick={submit}
