@@ -40,6 +40,19 @@ O workflow:
 
 A CLI da Vercel está fixada em `59.20.0` para evitar mudança inesperada do pipeline.
 
+## Preflight
+
+Antes de aplicar migrations ou publicar, execute **Production release preflight**.
+
+O workflow `.github/workflows/release-preflight.yml`:
+
+- valida os secrets de produção sem imprimir valores;
+- conecta ao Supabase;
+- executa `supabase db push --dry-run`;
+- baixa as configurações de produção da Vercel;
+- executa `vercel build --prod`;
+- não aplica migrations e não publica deployment.
+
 ## Primeiro deploy
 
 Antes do primeiro deploy:
