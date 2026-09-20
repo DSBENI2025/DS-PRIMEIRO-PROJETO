@@ -374,7 +374,7 @@ export async function deleteGoogleCalendarEvent(
     professionalId
   );
 
-  if (!integration) return;
+  if (!integration) return false;
 
   const accessToken = await accessTokenFor(integration);
   const calendarId = integration.calendar_id || "primary";
@@ -395,4 +395,6 @@ export async function deleteGoogleCalendarEvent(
   if (!response.ok && response.status !== 404 && response.status !== 410) {
     throw new Error("Falha ao remover evento do Google Agenda.");
   }
+
+  return true;
 }
