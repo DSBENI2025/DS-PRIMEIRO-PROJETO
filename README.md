@@ -1,51 +1,80 @@
 # Agenda Pro
 
-SaaS de agendamento com cobrança recorrente.
+MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobrança recorrente.
+
+## O que já existe
+
+- cadastro e login com Supabase Auth
+- onboarding do negócio
+- slug público por estabelecimento
+- serviços com duração e preço
+- profissionais
+- horários de atendimento por dia da semana
+- página pública em `/agendar/[slug]`
+- criação de agendamento sem login do cliente final
+- prevenção de conflito de horário por profissional
+- painel com próximos agendamentos
+- cancelamento de agendamento
+- cobrança recorrente via Mercado Pago
+- webhook com validação de assinatura
+- bloqueio do painel e da agenda pública sem assinatura `authorized`
+- RLS no Supabase
+- CI no GitHub Actions
 
 ## Stack
-- Next.js + TypeScript
-- Mercado Pago Assinaturas
-- Supabase/PostgreSQL
-- Deploy preparado para Vercel
 
-## Fluxo de cobrança
-1. Cliente informa o e-mail e clica em **Assinar**.
-2. `POST /api/subscriptions/create` cria a assinatura no Mercado Pago.
-3. O cliente é redirecionado para o checkout retornado pelo Mercado Pago.
-4. O Mercado Pago envia eventos para `/api/webhooks/mercadopago`.
-5. O webhook valida a assinatura da notificação.
-6. O backend consulta a assinatura no Mercado Pago.
-7. A tabela `subscriptions` é atualizada e serve como fonte de verdade para liberar ou bloquear recursos.
+- Next.js 15
+- React 19
+- TypeScript
+- Supabase Auth + PostgreSQL
+- Mercado Pago Node SDK
+- GitHub Actions
 
-## Variáveis de ambiente
-Copie `.env.example` para `.env.local` e preencha:
+## Variáveis
+
+Crie as variáveis a partir de `.env.example`:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 - `MERCADO_PAGO_ACCESS_TOKEN`
 - `MERCADO_PAGO_WEBHOOK_SECRET`
 - `MERCADO_PAGO_PLAN_ID`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_APP_URL`
 
-Nunca envie credenciais reais para o GitHub.
+Nunca publique valores reais dessas credenciais no repositório.
 
-## Banco
-Execute `supabase/schema.sql` no SQL Editor do Supabase.
+## Supabase
 
-## Status de assinatura
-A aplicação deve tratar a tabela `subscriptions` como fonte de verdade para liberar recursos.
+Execute `supabase/schema.sql` no SQL Editor do projeto Supabase.
 
-Status esperados:
-- pending
-- authorized
-- paused
-- cancelled
+No Supabase Auth, habilite Email/Password. Em produção, configure a Site URL para o domínio real.
 
-## Próximas fases
-- autenticação
-- onboarding do negócio
-- serviços e profissionais
-- horários e bloqueios
-- página pública de agendamento
-- sincronização Google Agenda
-- bloqueio automático por status da assinatura
-- cancelamento e reativação
+## Mercado Pago
+
+O fluxo usa uma assinatura vinculada a um plano por `preapproval_plan_id`.
+
+Webhook:
+
+`POST /api/webhooks/mercadopago`
+
+O painel só libera os recursos quando a assinatura está com status `authorized`.
+
+## Fluxo do usuário
+
+1. cria conta
+2. cadastra o negócio
+3. assina o Agenda Pro
+4. cadastra serviços e profissionais
+5. ajusta horários
+6. compartilha o link público
+7. recebe os agendamentos no painel
+
+## Próximos blocos
+
+- sincronização com Google Calendar
+- lembretes por WhatsApp
+- depósito/sinal via Pix no agendamento
+- mais de um usuário administrador
+- relatórios mensais
+- plano anual
