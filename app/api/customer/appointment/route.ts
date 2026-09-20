@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAppointmentAccessByToken } from "@/lib/customer-appointment-access";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { consumeRateLimit, rateLimitExceeded } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   try {
+    const rateLimit = await consumeRateLimit(req, "customer_view", 60, 600);
+
+    if (!rateLimit.allowed) {
+      return rateLimitExceeded(rateLimit);
+    }
+
     const token = req.nextUrl.searchParams.get("token") || "";
     const access = await getAppointmentAccessByToken(token);
 
