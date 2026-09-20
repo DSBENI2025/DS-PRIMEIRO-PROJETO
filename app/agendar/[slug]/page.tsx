@@ -43,7 +43,7 @@ export default async function BookingPage({
     );
   }
 
-  const [servicesResult, professionalsResult, hoursResult, mercadoPagoResult] = await Promise.all([
+  const [servicesResult, professionalsResult, hoursResult, professionalHoursResult, mercadoPagoResult] = await Promise.all([
     supabase
       .from("services")
       .select("id,name,duration_minutes,price_cents")
@@ -62,6 +62,20 @@ export default async function BookingPage({
       .eq("business_id", business.id)
       .order("weekday"),
     supabase
+      .from("professional_hours")
+      .select("professional_id,weekday,opens_at,closes_at,is_closed")
+      .in(
+        "professional_id",
+        (
+          await supabase
+            .from("professionals")
+            .select("id")
+            .eq("business_id", business.id)
+            .eq("active", true)
+        ).data?.map((item) => item.id) || []
+      )
+      .order("weekday"),
+    supabase
       .from("mercadopago_integrations")
       .select("id")
       .eq("business_id", business.id)
@@ -71,6 +85,7 @@ export default async function BookingPage({
   const services = servicesResult.data || [];
   const professionals = professionalsResult.data || [];
   const hours = hoursResult.data || [];
+  const professionalHours = professionalHoursResult.data || [];
 
   if (services.length === 0 || professionals.length === 0) {
     return (
@@ -91,6 +106,7 @@ export default async function BookingPage({
         services={services}
         professionals={professionals}
         hours={hours}
+        professionalHours={professionalHours}
         depositEnabled={Boolean(business.deposit_enabled)}
         depositPercent={Number(business.deposit_percent || 50)}
         paymentReady={Boolean(mercadoPagoResult.data)}
