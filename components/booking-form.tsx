@@ -40,6 +40,7 @@ type Props = {
   hours: BusinessHour[];
   depositEnabled: boolean;
   depositPercent: number;
+  paymentReady: boolean;
 };
 
 function ymd(date: Date) {
@@ -77,6 +78,7 @@ export default function BookingForm({
   hours,
   depositEnabled,
   depositPercent,
+  paymentReady,
 }: Props) {
   const [serviceId, setServiceId] = useState(services[0]?.id || "");
   const [professionalId, setProfessionalId] = useState(
@@ -373,7 +375,14 @@ export default function BookingForm({
           onChange={(e) => setCustomerEmail(e.target.value)}
         />
 
-        {requiresPix && selectedService && !payment && (
+        {requiresPix && !paymentReady && !payment && (
+          <div className="booking-message">
+            O sinal Pix está temporariamente indisponível. Entre em contato com
+            o estabelecimento para reservar este horário.
+          </div>
+        )}
+
+        {requiresPix && selectedService && paymentReady && !payment && (
           <div className="deposit-note">
             Para reservar este horário: sinal de {depositPercent}% (
             <strong>{brl(depositAmountCents)}</strong>) via Pix. O restante é
@@ -385,7 +394,11 @@ export default function BookingForm({
           <button
             className="cta"
             onClick={submit}
-            disabled={loading || slots.length === 0}
+            disabled={
+              loading ||
+              slots.length === 0 ||
+              (requiresPix && !paymentReady)
+            }
           >
             {loading
               ? "Processando..."
