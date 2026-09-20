@@ -756,6 +756,18 @@ export default function PainelPage() {
                   <span>Status: {appointment.status}</span>
                   {appointment.status === "confirmed" && (
                   <div className="appointment-actions">
+                    {new Date(appointment.start_time).getTime() > Date.now() && (
+                      <a
+                        className="secondary compact-action"
+                        href={
+                          "/painel/agendamentos/" +
+                          appointment.id +
+                          "/reagendar"
+                        }
+                      >
+                        Reagendar
+                      </a>
+                    )}
                     <button
                       className="secondary compact-action"
                       onClick={() =>

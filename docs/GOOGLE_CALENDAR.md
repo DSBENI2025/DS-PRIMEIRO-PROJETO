@@ -70,3 +70,10 @@ Ao desconectar uma agenda no Agenda Pro, a credencial local é apagada. O grant 
 Para habilitar calendários individuais aplique:
 
 `supabase/migrations/20260920_000003_professional_google_calendar.sql`
+
+
+## Rastreabilidade por atendimento
+
+Atendimentos novos armazenam o identificador da integração Google usada para criar o evento.
+
+Isso permite atualizar ou remover o evento no calendário original mesmo que, posteriormente, o profissional conecte uma agenda própria ou passe a usar outro fallback.

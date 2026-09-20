@@ -20,6 +20,7 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - slots livres considerando Agenda Pro, Pix e Google Agenda
 - prevenção de conflito de horário por profissional
 - painel com próximos agendamentos
+- reagendamento com revalidação completa de disponibilidade
 - cancelamento de agendamento
 - cobrança recorrente via Mercado Pago
 - webhook com validação de assinatura
@@ -158,7 +159,7 @@ Os lembretes são processados pelo workflow `.github/workflows/notifications.yml
 
 ## Próximos blocos
 
-- reagendamento de atendimentos
+- histórico/auditoria de alterações do atendimento
 - reembolso automático quando aplicável
 - exportação de relatórios
 - plano anual

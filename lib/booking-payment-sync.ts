@@ -1,5 +1,8 @@
 import { randomUUID } from "crypto";
-import { createGoogleCalendarEvent } from "@/lib/google-calendar";
+import {
+  createGoogleCalendarEvent,
+  getEffectiveGoogleIntegrationId,
+} from "@/lib/google-calendar";
 import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { notifyBookingConfirmed } from "@/lib/notifications";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -167,9 +170,19 @@ export async function syncBookingPayment(paymentId: string) {
       timeZone: business?.timezone || "America/Recife",
     });
 
+    const googleIntegrationId = googleEventId
+      ? await getEffectiveGoogleIntegrationId(
+          appointment.business_id,
+          appointment.professional_id
+        )
+      : null;
+
     await supabase
       .from("appointments")
-      .update({ google_event_id: googleEventId })
+      .update({
+        google_event_id: googleEventId,
+        google_integration_id: googleIntegrationId,
+      })
       .eq("id", appointmentId)
       .eq("google_event_id", marker);
   } catch (error) {
@@ -180,7 +193,10 @@ export async function syncBookingPayment(paymentId: string) {
 
     await supabase
       .from("appointments")
-      .update({ google_event_id: null })
+      .update({
+        google_event_id: null,
+        google_integration_id: null,
+      })
       .eq("id", appointmentId)
       .eq("google_event_id", marker);
   }

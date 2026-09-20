@@ -6,6 +6,7 @@ import {
 } from "@/lib/availability-server";
 import {
   createGoogleCalendarEvent,
+  getEffectiveGoogleIntegrationId,
   isGoogleCalendarBusy,
 } from "@/lib/google-calendar";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -258,9 +259,18 @@ export async function POST(req: NextRequest) {
       });
 
       if (googleEventId) {
+        const googleIntegrationId =
+          await getEffectiveGoogleIntegrationId(
+            businessId,
+            professionalId
+          );
+
         await supabase
           .from("appointments")
-          .update({ google_event_id: googleEventId })
+          .update({
+            google_event_id: googleEventId,
+            google_integration_id: googleIntegrationId,
+          })
           .eq("id", appointment.id);
       }
     } catch (error) {
