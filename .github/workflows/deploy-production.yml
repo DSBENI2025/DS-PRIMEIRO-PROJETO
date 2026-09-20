@@ -1,0 +1,71 @@
+name: Deploy production to Vercel
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: agenda-pro-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify Vercel credentials
+        run: |
+          test -n "$VERCEL_TOKEN" || (echo "VERCEL_TOKEN missing" && exit 1)
+          test -n "$VERCEL_ORG_ID" || (echo "VERCEL_ORG_ID missing" && exit 1)
+          test -n "$VERCEL_PROJECT_ID" || (echo "VERCEL_PROJECT_ID missing" && exit 1)
+
+      - name: Pull production settings
+        run: npx vercel@59.20.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build production artifact
+        run: npx vercel@59.20.0 build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy production artifact
+        id: deploy
+        shell: bash
+        run: |
+          DEPLOYMENT_URL="$(npx vercel@59.20.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "### Agenda Pro production deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: ${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify health endpoint
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error "$DEPLOYMENT_URL/api/health"; then
+              echo
+              echo "Production health check passed."
+              exit 0
+            fi
+
+            echo "Health check attempt $attempt failed. Retrying..."
+            sleep 5
+          done
+
+          echo "Production health check failed."
+          exit 1

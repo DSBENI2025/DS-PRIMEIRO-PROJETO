@@ -76,6 +76,8 @@ Nunca publique valores reais dessas credenciais no repositório.
 
 Checklist completo em `docs/PRODUCTION.md`.
 
+Deploy pela Vercel via GitHub Actions: `docs/VERCEL_DEPLOY.md`.
+
 Health check: `GET /api/health`.
 
 ## Supabase
