@@ -1,0 +1,85 @@
+name: Production release preflight
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: agenda-pro-production-preflight
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      AGENDA_PRO_BASE_URL: ${{ secrets.AGENDA_PRO_BASE_URL }}
+      NOTIFICATION_CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify release secrets
+        shell: bash
+        run: |
+          missing=0
+
+          for name in             SUPABASE_ACCESS_TOKEN             SUPABASE_DB_PASSWORD             SUPABASE_PROJECT_ID             VERCEL_TOKEN             VERCEL_ORG_ID             VERCEL_PROJECT_ID             AGENDA_PRO_BASE_URL             NOTIFICATION_CRON_SECRET
+          do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not configured in the production environment."
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          node -e "new URL(process.env.AGENDA_PRO_BASE_URL); console.log('AGENDA_PRO_BASE_URL is valid.')"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: latest
+
+      - name: Link Supabase production
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Preview database migrations
+        run: supabase db push --dry-run
+
+      - name: Pull Vercel production settings
+        run: npx vercel@59.20.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build production artifact
+        run: npx vercel@59.20.0 build --prod --token="$VERCEL_TOKEN"
+
+      - name: Preflight summary
+        shell: bash
+        run: |
+          echo "### Agenda Pro production preflight" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Supabase project link: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Supabase migration dry-run: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Vercel production settings: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Vercel production build: OK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Notification scheduler secrets: present" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: ${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
