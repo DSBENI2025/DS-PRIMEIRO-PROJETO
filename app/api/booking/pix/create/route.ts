@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
 import { isGoogleCalendarBusy } from "@/lib/google-calendar";
-import { getPaymentClient } from "@/lib/mercadopago";
+import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { syncBookingPayment } from "@/lib/booking-payment-sync";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL não configurado.");
 
-    const paymentClient = getPaymentClient();
+    const paymentClient = await getBusinessPaymentClient(businessId);\n    if (!paymentClient) {\n      throw new Error("Mercado Pago do estabelecimento não conectado.");\n    }
 
     const payment = await paymentClient.create({
       body: {
