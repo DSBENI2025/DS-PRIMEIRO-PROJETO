@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { businessHasActiveSubscription } from "@/lib/business-access";
+import { getEffectiveWorkingHours } from "@/lib/availability-server";
 import {
   createGoogleCalendarEvent,
   isGoogleCalendarBusy,
@@ -123,12 +124,11 @@ export async function POST(req: NextRequest) {
 
     const weekday = new Date(date + "T12:00:00-03:00").getUTCDay();
 
-    const { data: hours } = await supabase
-      .from("business_hours")
-      .select("opens_at,closes_at,is_closed")
-      .eq("business_id", businessId)
-      .eq("weekday", weekday)
-      .maybeSingle();
+    const hours = await getEffectiveWorkingHours({
+      businessId,
+      professionalId,
+      weekday,
+    });
 
     if (!hours || hours.is_closed || !hours.opens_at || !hours.closes_at) {
       return NextResponse.json(
