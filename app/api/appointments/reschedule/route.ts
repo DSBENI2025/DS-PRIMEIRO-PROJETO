@@ -7,6 +7,7 @@ import {
 import {
   createGoogleCalendarEvent,
   deleteGoogleCalendarEvent,
+  getEffectiveGoogleIntegrationId,
   isGoogleCalendarBusyExceptEvent,
   updateGoogleCalendarEvent,
 } from "@/lib/google-calendar";
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     const { data: appointment } = await supabase
       .from("appointments")
       .select(
-        "id,business_id,service_id,professional_id,customer_name,customer_phone,customer_email,start_time,end_time,status,google_event_id,services(name,duration_minutes),professionals(name)"
+        "id,business_id,service_id,professional_id,customer_name,customer_phone,customer_email,start_time,end_time,status,google_event_id,google_integration_id,services(name,duration_minutes),professionals(name)"
       )
       .eq("id", appointmentId)
       .eq("business_id", auth.business.id)
@@ -173,7 +174,8 @@ export async function POST(req: NextRequest) {
         start.toISOString(),
         end.toISOString(),
         professionalId,
-        appointment.google_event_id
+        appointment.google_event_id,
+        appointment.google_integration_id
       );
 
       if (googleBusy) {
@@ -187,7 +189,9 @@ export async function POST(req: NextRequest) {
     }
 
     const oldProfessionalId = appointment.professional_id;
-    const oldGoogleEventId = appointment.google_event_id;
+    const oldGoogleEventId = appointment.google_event_id as string | null;
+    const oldGoogleIntegrationId =
+      appointment.google_integration_id as string | null;
 
     const { data: updatedId, error: rescheduleError } = await supabase.rpc(
       "reschedule_appointment",
@@ -217,103 +221,116 @@ export async function POST(req: NextRequest) {
     }
 
     let googleSynced = true;
-    let googleEventId = oldGoogleEventId as string | null;
+    let googleEventId = oldGoogleEventId;
+    let googleIntegrationId = oldGoogleIntegrationId;
+
+    const summary =
+      String(service.name || "Agendamento") +
+      " - " +
+      appointment.customer_name;
+    const description =
+      "Cliente: " +
+      appointment.customer_name +
+      "\nWhatsApp: " +
+      appointment.customer_phone +
+      (appointment.customer_email
+        ? "\nE-mail: " + appointment.customer_email
+        : "") +
+      "\nProfissional: " +
+      professional.name;
 
     try {
-      if (oldProfessionalId === professionalId && oldGoogleEventId) {
+      const targetIntegrationId =
+        await getEffectiveGoogleIntegrationId(
+          auth.business.id,
+          professionalId
+        );
+
+      const sameKnownIntegration =
+        Boolean(oldGoogleEventId) &&
+        Boolean(oldGoogleIntegrationId) &&
+        oldGoogleIntegrationId === targetIntegrationId;
+
+      const legacySameProfessional =
+        Boolean(oldGoogleEventId) &&
+        !oldGoogleIntegrationId &&
+        oldProfessionalId === professionalId;
+
+      if (sameKnownIntegration || legacySameProfessional) {
         const patched = await updateGoogleCalendarEvent({
           businessId: auth.business.id,
           professionalId,
-          eventId: oldGoogleEventId,
+          integrationId:
+            oldGoogleIntegrationId || targetIntegrationId,
+          eventId: oldGoogleEventId as string,
           startTime: start.toISOString(),
           endTime: end.toISOString(),
           timeZone: auth.business.timezone,
+          summary,
+          description,
         });
 
-        if (!patched) {
+        if (patched) {
+          googleIntegrationId =
+            targetIntegrationId || oldGoogleIntegrationId;
+        } else {
           const created = await createGoogleCalendarEvent({
             businessId: auth.business.id,
             professionalId,
-            summary: String(service.name || "Agendamento") + " - " + appointment.customer_name,
-            description:
-              "Cliente: " +
-              appointment.customer_name +
-              "\nWhatsApp: " +
-              appointment.customer_phone +
-              (appointment.customer_email
-                ? "\nE-mail: " + appointment.customer_email
-                : "") +
-              "\nProfissional: " +
-              professional.name,
+            summary,
+            description,
             startTime: start.toISOString(),
             endTime: end.toISOString(),
             timeZone: auth.business.timezone,
           });
 
-          if (created) googleEventId = created;
+          if (created) {
+            googleEventId = created;
+            googleIntegrationId = targetIntegrationId;
+          } else {
+            googleSynced = targetIntegrationId === null;
+          }
         }
-      } else if (oldProfessionalId !== professionalId) {
+      } else {
         let oldRemoved = true;
 
         if (oldGoogleEventId) {
           oldRemoved = await deleteGoogleCalendarEvent(
             auth.business.id,
             oldGoogleEventId,
-            oldProfessionalId
+            oldProfessionalId,
+            oldGoogleIntegrationId
           );
         }
 
-        if (oldRemoved) {
+        if (!oldRemoved && oldGoogleEventId) {
+          googleSynced = false;
+        } else {
           const created = await createGoogleCalendarEvent({
             businessId: auth.business.id,
             professionalId,
-            summary: String(service.name || "Agendamento") + " - " + appointment.customer_name,
-            description:
-              "Cliente: " +
-              appointment.customer_name +
-              "\nWhatsApp: " +
-              appointment.customer_phone +
-              (appointment.customer_email
-                ? "\nE-mail: " + appointment.customer_email
-                : "") +
-              "\nProfissional: " +
-              professional.name,
+            summary,
+            description,
             startTime: start.toISOString(),
             endTime: end.toISOString(),
             timeZone: auth.business.timezone,
           });
 
           googleEventId = created || null;
-        } else {
-          googleSynced = false;
+          googleIntegrationId = created ? targetIntegrationId : null;
         }
-      } else if (!oldGoogleEventId) {
-        const created = await createGoogleCalendarEvent({
-          businessId: auth.business.id,
-          professionalId,
-          summary: String(service.name || "Agendamento") + " - " + appointment.customer_name,
-          description:
-            "Cliente: " +
-            appointment.customer_name +
-            "\nWhatsApp: " +
-            appointment.customer_phone +
-            (appointment.customer_email
-              ? "\nE-mail: " + appointment.customer_email
-              : "") +
-            "\nProfissional: " +
-            professional.name,
-          startTime: start.toISOString(),
-          endTime: end.toISOString(),
-          timeZone: auth.business.timezone,
-        });
-
-        if (created) googleEventId = created;
       }
 
-      if (googleEventId !== oldGoogleEventId) {
+      if (
+        googleEventId !== oldGoogleEventId ||
+        googleIntegrationId !== oldGoogleIntegrationId
+      ) {
         await supabase
           .from("appointments")
-          .update({ google_event_id: googleEventId })
+          .update({
+            google_event_id: googleEventId,
+            google_integration_id: googleIntegrationId,
+          })
           .eq("id", appointment.id);
       }
     } catch (error) {
