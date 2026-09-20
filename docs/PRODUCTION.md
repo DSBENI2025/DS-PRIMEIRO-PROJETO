@@ -27,8 +27,8 @@ Configure no ambiente de produção:
 
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` ou `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SECRET_KEY` ou `SUPABASE_SERVICE_ROLE_KEY`
 - `MERCADO_PAGO_ACCESS_TOKEN`
 - `MERCADO_PAGO_WEBHOOK_SECRET`
 - `MERCADO_PAGO_PLAN_ID`
@@ -68,7 +68,7 @@ Ative Email/Password e configure:
 - Site URL: domínio real do Agenda Pro
 - Redirect URLs compatíveis com o domínio de produção
 
-Nunca exponha `SUPABASE_SERVICE_ROLE_KEY` no navegador.
+Prefira as novas chaves `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `SUPABASE_SECRET_KEY`. As chaves legadas continuam aceitas por compatibilidade. Nunca exponha `SUPABASE_SECRET_KEY` nem `SUPABASE_SERVICE_ROLE_KEY` no navegador.
 
 ## 5. Mercado Pago — assinatura SaaS
 
@@ -87,9 +87,9 @@ Endpoint:
 
 `GET /api/health`
 
-Resposta 200 significa que as variáveis obrigatórias estão presentes e o banco respondeu.
+Resposta 200 significa que as variáveis obrigatórias estão presentes, o banco respondeu e todas as tabelas críticas esperadas pelas migrations estão disponíveis pela Data API do servidor.
 
-Resposta 503 significa ambiente incompleto ou banco indisponível.
+Resposta 503 significa ambiente incompleto, banco indisponível ou schema/migrations incompletos. O campo `missingTables` ajuda a localizar migrations ou grants ausentes.
 
 O endpoint não expõe tokens nem valores secretos.
 
@@ -137,14 +137,34 @@ O endpoint não expõe tokens nem valores secretos.
 
 ## 8. GitHub Actions Secrets
 
+Para aplicar migrations do Supabase:
+
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_DB_PASSWORD`
+- `SUPABASE_PROJECT_ID`
+
+Para publicar na Vercel:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
 Para o workflow de lembretes:
 
 - `AGENDA_PRO_BASE_URL`
 - `NOTIFICATION_CRON_SECRET`
 
-Não reutilize credenciais sensíveis desnecessariamente entre serviços.
+Use o GitHub Environment `production` e não reutilize credenciais sensíveis desnecessariamente entre serviços.
 
-## 9. Regra de release
+## 9. Ordem de publicação
+
+1. Execute **Deploy Supabase migrations** no GitHub Actions.
+2. Confirme que `supabase migration list` terminou sem erro.
+3. Execute **Deploy production to Vercel**.
+4. O deploy consulta `/api/health` e falha se o schema estiver incompleto.
+5. Execute o checklist pós-deploy.
+
+## 10. Regra de release
 
 Só promover mudanças para produção quando:
 
