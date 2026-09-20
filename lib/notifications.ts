@@ -44,7 +44,7 @@ async function claimNotification(args: {
 
   let query = supabase
     .from("notification_logs")
-    .select("id,status")
+    .select("id,status,updated_at")
     .eq("notification_type", args.type);
 
   if (args.appointmentId) {
@@ -55,7 +55,15 @@ async function claimNotification(args: {
 
   const { data: existing } = await query.maybeSingle();
 
-  if (existing?.status === "sent" || existing?.status === "processing") {
+  if (existing?.status === "sent") {
+    return null;
+  }
+
+  if (
+    existing?.status === "processing" &&
+    existing.updated_at &&
+    new Date(existing.updated_at).getTime() > Date.now() - 15 * 60 * 1000
+  ) {
     return null;
   }
 
@@ -66,6 +74,7 @@ async function claimNotification(args: {
         status: "processing",
         error_message: null,
         recipient: args.recipient,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id)
       .select("id")
@@ -85,6 +94,7 @@ async function claimNotification(args: {
       notification_type: args.type,
       recipient: args.recipient,
       status: "processing",
+      updated_at: new Date().toISOString(),
     })
     .select("id")
     .single();
@@ -111,6 +121,7 @@ async function finalizeLog(
       status,
       provider_message_id: providerMessageId || null,
       error_message: errorMessage || null,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", logId);
 }
