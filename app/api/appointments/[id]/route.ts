@@ -19,7 +19,7 @@ export async function GET(
     const { data: appointment } = await supabase
       .from("appointments")
       .select(
-        "id,business_id,service_id,professional_id,customer_name,customer_phone,customer_email,start_time,end_time,status,google_event_id,services(name,duration_minutes),professionals(name)"
+        "id,business_id,service_id,professional_id,customer_name,customer_phone,customer_email,start_time,end_time,status,google_event_id,google_integration_id,services(name,duration_minutes),professionals(name)"
       )
       .eq("id", id)
       .eq("business_id", auth.business.id)
