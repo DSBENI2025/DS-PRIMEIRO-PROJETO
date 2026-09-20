@@ -7,6 +7,7 @@ const required = [
   "MERCADO_PAGO_WEBHOOK_SECRET",
   "MERCADO_PAGO_PLAN_ID",
   "TOKEN_ENCRYPTION_KEY",
+  "RATE_LIMIT_SECRET",
 ];
 
 const missing = required.filter(
@@ -34,6 +35,11 @@ try {
 
 if (process.env.TOKEN_ENCRYPTION_KEY.length < 32) {
   console.error("TOKEN_ENCRYPTION_KEY must have at least 32 characters.");
+  process.exit(1);
+}
+
+if (process.env.RATE_LIMIT_SECRET.length < 32) {
+  console.error("RATE_LIMIT_SECRET must have at least 32 characters.");
   process.exit(1);
 }
 
