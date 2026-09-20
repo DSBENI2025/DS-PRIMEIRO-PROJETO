@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { createGoogleCalendarEvent } from "@/lib/google-calendar";
-import { getPaymentClient } from "@/lib/mercadopago";
+import { getBusinessPaymentClient } from "@/lib/mercadopago-seller";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type PaymentStatus =
@@ -21,7 +21,28 @@ function localStatus(providerStatus: string | null | undefined): PaymentStatus {
 }
 
 export async function syncBookingPayment(paymentId: string) {
-  const paymentClient = getPaymentClient();
+  const supabase = getSupabaseAdmin();
+
+  const { data: bookingPayment } = await supabase
+    .from("booking_payments")
+    .select("id,business_id,status,appointment_id")
+    .eq("provider_payment_id", paymentId)
+    .maybeSingle();
+
+  if (!bookingPayment) {
+    return { handled: false, status: "pending" as const };
+  }
+
+  const paymentClient = await getBusinessPaymentClient(
+    bookingPayment.business_id
+  );
+
+  if (!paymentClient) {
+    throw new Error(
+      "Estabelecimento sem conexão Mercado Pago para consultar o pagamento."
+    );
+  }
+
   const payment = await paymentClient.get({ id: paymentId });
 
   if (!payment.id) {
@@ -30,17 +51,6 @@ export async function syncBookingPayment(paymentId: string) {
 
   const providerPaymentId = String(payment.id);
   const status = localStatus(payment.status);
-  const supabase = getSupabaseAdmin();
-
-  const { data: bookingPayment } = await supabase
-    .from("booking_payments")
-    .select("id,status,appointment_id")
-    .eq("provider_payment_id", providerPaymentId)
-    .maybeSingle();
-
-  if (!bookingPayment) {
-    return { handled: false, status };
-  }
 
   if (status !== "approved") {
     const { error } = await supabase
@@ -72,6 +82,16 @@ export async function syncBookingPayment(paymentId: string) {
 
   if (finalizeError) {
     console.error("Falha ao finalizar agendamento pago", finalizeError);
+
+    await supabase
+      .from("booking_payments")
+      .update({
+        status: "conflict",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", bookingPayment.id)
+      .neq("status", "approved");
+
     return { handled: true, status: "conflict" as const };
   }
 
@@ -145,7 +165,10 @@ export async function syncBookingPayment(paymentId: string) {
       .eq("id", appointmentId)
       .eq("google_event_id", marker);
   } catch (error) {
-    console.error("Agendamento pago confirmado, mas sincronização Google falhou", error);
+    console.error(
+      "Agendamento pago confirmado, mas sincronização Google falhou",
+      error
+    );
 
     await supabase
       .from("appointments")
