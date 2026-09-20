@@ -128,7 +128,7 @@ export async function syncBookingPayment(paymentId: string) {
     const { data: appointment, error } = await supabase
       .from("appointments")
       .select(
-        "id,business_id,customer_name,customer_phone,customer_email,start_time,end_time,services(name),professionals(name),businesses(name,timezone)"
+        "id,business_id,professional_id,customer_name,customer_phone,customer_email,start_time,end_time,services(name),professionals(name),businesses(name,timezone)"
       )
       .eq("id", appointmentId)
       .single();
@@ -147,6 +147,7 @@ export async function syncBookingPayment(paymentId: string) {
 
     const googleEventId = await createGoogleCalendarEvent({
       businessId: appointment.business_id,
+      professionalId: appointment.professional_id,
       summary:
         (service?.name || "Agendamento") +
         " - " +

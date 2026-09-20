@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const { data: appointment } = await supabase
       .from("appointments")
-      .select("id,business_id,google_event_id,status")
+      .select("id,business_id,professional_id,google_event_id,status")
       .eq("id", appointmentId)
       .eq("business_id", auth.business.id)
       .maybeSingle();
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       try {
         await deleteGoogleCalendarEvent(
           auth.business.id,
-          appointment.google_event_id
+          appointment.google_event_id,
+          appointment.professional_id
         );
       } catch (error) {
         console.error("Falha ao remover evento Google", error);

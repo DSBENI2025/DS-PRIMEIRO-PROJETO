@@ -28,6 +28,8 @@ export default function ProfessionalHoursPage() {
   const [professionalName, setProfessionalName] = useState("");
   const [days, setDays] = useState<Day[]>([]);
   const [customized, setCustomized] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleInherited, setGoogleInherited] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +57,7 @@ export default function ProfessionalHoursPage() {
 
       setProfessionalName(professional.name);
 
-      const [{ data: custom }, { data: businessHours }] = await Promise.all([
+      const [{ data: custom }, { data: businessHours }, googleStatusResponse] = await Promise.all([
         supabase
           .from("professional_hours")
           .select("weekday,opens_at,closes_at,is_closed")
@@ -66,7 +68,23 @@ export default function ProfessionalHoursPage() {
           .select("weekday,opens_at,closes_at,is_closed")
           .eq("business_id", professional.business_id)
           .order("weekday"),
+        fetch(
+          "/api/google/status?professionalId=" +
+            encodeURIComponent(professionalId),
+          {
+            headers: {
+              Authorization:
+                "Bearer " + session.session.access_token,
+            },
+          }
+        ),
       ]);
+
+      if (googleStatusResponse.ok) {
+        const googleStatus = await googleStatusResponse.json();
+        setGoogleConnected(Boolean(googleStatus.connected));
+        setGoogleInherited(Boolean(googleStatus.inherited));
+      }
 
       const hasCustom = Boolean(custom && custom.length > 0);
       setCustomized(hasCustom);
@@ -99,6 +117,62 @@ export default function ProfessionalHoursPage() {
         day.weekday === weekday ? { ...day, ...patch } : day
       )
     );
+  }
+
+  async function connectGoogle() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/google/connect", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ professionalId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(
+        result.error || "Não foi possível conectar o Google Agenda."
+      );
+      return;
+    }
+
+    window.location.href = result.authorizationUrl;
+  }
+
+  async function disconnectGoogle() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/google/disconnect", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ professionalId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(
+        result.error || "Não foi possível desconectar o Google Agenda."
+      );
+      return;
+    }
+
+    window.location.reload();
   }
 
   async function save() {
@@ -162,6 +236,31 @@ export default function ProfessionalHoursPage() {
         </div>
         <a className="secondary" href="/painel">Voltar ao painel</a>
       </div>
+
+      <section className="card">
+        <div className="row between">
+          <div>
+            <h2>Google Agenda</h2>
+            <p>
+              {googleConnected
+                ? "Este profissional possui um Google Agenda próprio conectado."
+                : googleInherited
+                  ? "Este profissional está usando o Google Agenda geral do estabelecimento."
+                  : "Nenhum Google Agenda está disponível para este profissional."}
+            </p>
+          </div>
+
+          {googleConnected ? (
+            <button className="secondary" onClick={disconnectGoogle}>
+              Desconectar agenda própria
+            </button>
+          ) : (
+            <button className="cta" onClick={connectGoogle}>
+              Conectar Google deste profissional
+            </button>
+          )}
+        </div>
+      </section>
 
       <section className="card">
         <h2>Disponibilidade semanal</h2>

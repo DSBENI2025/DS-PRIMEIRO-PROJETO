@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { encryptSecret } from "@/lib/secret-crypto";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
+function targetPath(
+  professionalId: string | null | undefined,
+  status: string
+) {
+  if (professionalId) {
+    return (
+      "/painel/profissionais/" +
+      encodeURIComponent(professionalId) +
+      "/horarios?google=" +
+      encodeURIComponent(status)
+    );
+  }
+
+  return "/painel?google=" + encodeURIComponent(status);
+}
+
 export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
 
@@ -10,13 +26,7 @@ export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
     const state = req.nextUrl.searchParams.get("state");
 
-    if (errorParam) {
-      return NextResponse.redirect(
-        new URL("/painel?google=denied", appUrl)
-      );
-    }
-
-    if (!code || !state) {
+    if (!state) {
       return NextResponse.redirect(
         new URL("/painel?google=invalid", appUrl)
       );
@@ -26,18 +36,35 @@ export async function GET(req: NextRequest) {
 
     const { data: stateRecord } = await supabase
       .from("oauth_states")
-      .select("state,user_id,business_id,expires_at")
+      .select("state,user_id,business_id,professional_id,expires_at")
       .eq("state", state)
       .eq("provider", "google")
       .maybeSingle();
 
-    if (
-      !stateRecord ||
-      new Date(stateRecord.expires_at).getTime() < Date.now()
-    ) {
+    if (!stateRecord) {
       return NextResponse.redirect(
-        new URL("/painel?google=expired", appUrl)
+        new URL("/painel?google=invalid", appUrl)
       );
+    }
+
+    const redirect = (status: string) =>
+      NextResponse.redirect(
+        new URL(targetPath(stateRecord.professional_id, status), appUrl)
+      );
+
+    if (errorParam) {
+      await supabase.from("oauth_states").delete().eq("state", state);
+      return redirect("denied");
+    }
+
+    if (!code) {
+      await supabase.from("oauth_states").delete().eq("state", state);
+      return redirect("invalid");
+    }
+
+    if (new Date(stateRecord.expires_at).getTime() < Date.now()) {
+      await supabase.from("oauth_states").delete().eq("state", state);
+      return redirect("expired");
     }
 
     await supabase.from("oauth_states").delete().eq("state", state);
@@ -71,12 +98,17 @@ export async function GET(req: NextRequest) {
       throw new Error("Troca de código OAuth falhou.");
     }
 
-    const { data: existing } = await supabase
+    let existingQuery = supabase
       .from("calendar_integrations")
-      .select("refresh_token_encrypted")
+      .select("id,refresh_token_encrypted")
       .eq("business_id", stateRecord.business_id)
-      .eq("provider", "google")
-      .maybeSingle();
+      .eq("provider", "google");
+
+    existingQuery = stateRecord.professional_id
+      ? existingQuery.eq("professional_id", stateRecord.professional_id)
+      : existingQuery.is("professional_id", null);
+
+    const { data: existing } = await existingQuery.maybeSingle();
 
     const refreshTokenEncrypted = tokens.refresh_token
       ? encryptSecret(tokens.refresh_token)
@@ -90,31 +122,50 @@ export async function GET(req: NextRequest) {
       Date.now() + Number(tokens.expires_in || 3600) * 1000
     ).toISOString();
 
-    const { error } = await supabase
-      .from("calendar_integrations")
-      .upsert(
-        {
-          business_id: stateRecord.business_id,
-          provider: "google",
-          access_token_encrypted: encryptSecret(tokens.access_token),
-          refresh_token_encrypted: refreshTokenEncrypted,
-          expires_at: expiresAt,
-          scope: tokens.scope || null,
-          calendar_id: "primary",
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "business_id" }
-      );
+    const values = {
+      business_id: stateRecord.business_id,
+      professional_id: stateRecord.professional_id || null,
+      provider: "google",
+      access_token_encrypted: encryptSecret(tokens.access_token),
+      refresh_token_encrypted: refreshTokenEncrypted,
+      expires_at: expiresAt,
+      scope: tokens.scope || null,
+      calendar_id: "primary",
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = existing
+      ? await supabase
+          .from("calendar_integrations")
+          .update(values)
+          .eq("id", existing.id)
+      : await supabase.from("calendar_integrations").insert(values);
 
     if (error) throw error;
 
-    return NextResponse.redirect(
-      new URL("/painel?google=connected", appUrl)
-    );
+    return redirect("connected");
   } catch (error) {
     console.error(error);
+
+    const state = req.nextUrl.searchParams.get("state");
+    let professionalId: string | null = null;
+
+    if (state) {
+      try {
+        const supabase = getSupabaseAdmin();
+        const { data } = await supabase
+          .from("oauth_states")
+          .select("professional_id")
+          .eq("state", state)
+          .maybeSingle();
+        professionalId = data?.professional_id || null;
+      } catch {
+        professionalId = null;
+      }
+    }
+
     return NextResponse.redirect(
-      new URL("/painel?google=error", appUrl)
+      new URL(targetPath(professionalId, "error"), appUrl)
     );
   }
 }

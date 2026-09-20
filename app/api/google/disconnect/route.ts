@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedBusiness } from "@/lib/auth-server";
-import { decryptSecret } from "@/lib/secret-crypto";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
@@ -11,36 +10,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const professionalId =
+      typeof body.professionalId === "string" && body.professionalId
+        ? body.professionalId
+        : null;
+
     const supabase = getSupabaseAdmin();
 
-    const { data: integration } = await supabase
-      .from("calendar_integrations")
-      .select("refresh_token_encrypted")
-      .eq("business_id", auth.business.id)
-      .eq("provider", "google")
-      .maybeSingle();
+    if (professionalId) {
+      const { data: professional } = await supabase
+        .from("professionals")
+        .select("id")
+        .eq("id", professionalId)
+        .eq("business_id", auth.business.id)
+        .maybeSingle();
 
-    if (integration?.refresh_token_encrypted) {
-      try {
-        await fetch("https://oauth2.googleapis.com/revoke", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            token: decryptSecret(integration.refresh_token_encrypted),
-          }),
-        });
-      } catch (error) {
-        console.error("Falha ao revogar token Google", error);
+      if (!professional) {
+        return NextResponse.json(
+          { error: "Profissional não encontrado." },
+          { status: 404 }
+        );
       }
+    }
+
+    let query = supabase
+      .from("calendar_integrations")
+      .select("id,refresh_token_encrypted")
+      .eq("business_id", auth.business.id)
+      .eq("provider", "google");
+
+    query = professionalId
+      ? query.eq("professional_id", professionalId)
+      : query.is("professional_id", null);
+
+    const { data: integration } = await query.maybeSingle();
+
+    if (!integration) {
+      return NextResponse.json({ disconnected: true });
     }
 
     const { error } = await supabase
       .from("calendar_integrations")
       .delete()
-      .eq("business_id", auth.business.id)
-      .eq("provider", "google");
+      .eq("id", integration.id);
 
     if (error) throw error;
 
