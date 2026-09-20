@@ -21,6 +21,9 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Build
         run: npm run build
         env:
@@ -34,3 +37,6 @@ jobs:
           GOOGLE_CLIENT_ID: TEST_GOOGLE_CLIENT_ID
           GOOGLE_CLIENT_SECRET: TEST_GOOGLE_CLIENT_SECRET
           GOOGLE_TOKEN_ENCRYPTION_KEY: test-encryption-key-32-characters-minimum
+          TOKEN_ENCRYPTION_KEY: test-server-encryption-key-32-characters-minimum
+          MERCADO_PAGO_CLIENT_ID: TEST_MP_CLIENT_ID
+          MERCADO_PAGO_CLIENT_SECRET: TEST_MP_CLIENT_SECRET

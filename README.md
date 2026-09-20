@@ -23,6 +23,10 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - conexão OAuth com Google Agenda
 - consulta de disponibilidade no Google Agenda
 - criação e remoção automática de eventos no Google Agenda
+- conexão Mercado Pago por estabelecimento via OAuth + PKCE
+- sinal Pix configurável por negócio
+- pré-reserva do horário por 30 minutos
+- confirmação automática do agendamento após aprovação do Pix
 
 ## Stack
 
@@ -47,6 +51,9 @@ Crie as variáveis a partir de `.env.example`:
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `GOOGLE_TOKEN_ENCRYPTION_KEY`
+- `MERCADO_PAGO_CLIENT_ID`
+- `MERCADO_PAGO_CLIENT_SECRET`
+- `TOKEN_ENCRYPTION_KEY`
 
 Nunca publique valores reais dessas credenciais no repositório.
 
@@ -78,6 +85,29 @@ A integração solicita acesso offline e usa escopos restritos a eventos das age
 
 Os access/refresh tokens são armazenados criptografados. A chave de criptografia deve existir somente nas variáveis de ambiente do servidor.
 
+## Sinal Pix por estabelecimento
+
+A assinatura mensal do Agenda Pro utiliza a credencial da plataforma.
+
+O sinal pago pelo cliente final utiliza OAuth do Mercado Pago para que cada
+estabelecimento conecte a própria conta. O Agenda Pro não usa a credencial da
+plataforma para receber o sinal do cliente.
+
+Callback OAuth do Mercado Pago:
+
+`<NEXT_PUBLIC_APP_URL>/api/mercadopago/callback`
+
+O sinal começa desativado. Depois que o estabelecimento conecta o Mercado Pago,
+ele pode habilitar o sinal e escolher um percentual entre 10% e 100%.
+
+Com o sinal ativo:
+1. o horário é pré-reservado;
+2. um Pix é gerado na conta Mercado Pago do estabelecimento;
+3. a pré-reserva dura 30 minutos;
+4. o webhook confirma o pagamento;
+5. o agendamento definitivo é criado;
+6. o evento é sincronizado com o Google Agenda, quando conectado.
+
 ## Fluxo do usuário
 
 1. cria conta
@@ -92,7 +122,7 @@ Os access/refresh tokens são armazenados criptografados. A chave de criptografi
 
 - vincular um Google Agenda diferente por profissional
 - lembretes por WhatsApp
-- depósito/sinal via Pix no agendamento
+- reembolso automático quando aplicável
 - mais de um usuário administrador
 - relatórios mensais
 - plano anual

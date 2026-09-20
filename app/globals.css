@@ -45,3 +45,15 @@ p { color: #555; line-height: 1.55; }
   .schedule-row { grid-template-columns: 1fr 1fr; }
   .schedule-row span { display: none; }
 }
+
+.deposit-note { padding: 14px; border-radius: 10px; background: #f4f4f5; line-height: 1.5; }
+.booking-message { padding: 14px; border-radius: 10px; background: #fff7ed; color: #7c2d12; }
+.pix-card { display: grid; gap: 14px; padding: 22px; border: 1px solid #dedee3; border-radius: 16px; background: #fafafa; }
+.pix-card h2 { margin-bottom: 0; }
+.pix-amount { font-size: 30px; font-weight: 700; }
+.pix-qr { width: 240px; max-width: 100%; height: auto; justify-self: center; border-radius: 12px; background: white; padding: 8px; }
+.pix-copy { min-height: 90px; resize: vertical; font-family: monospace; font-size: 12px; }
+.deposit-settings { display: grid; gap: 16px; max-width: 520px; margin-top: 18px; }
+.toggle-row { display: flex; gap: 10px; align-items: center; }
+.percent-input { display: grid; grid-template-columns: 120px 30px; align-items: center; gap: 8px; }
+.percent-input .input { margin-top: 6px; }

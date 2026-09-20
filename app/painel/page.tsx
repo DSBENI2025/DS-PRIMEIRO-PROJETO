@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
-type Business = { id: string; name: string; slug: string; phone: string | null };
+type Business = {
+  id: string;
+  name: string;
+  slug: string;
+  phone: string | null;
+  deposit_enabled: boolean;
+  deposit_percent: number;
+};
 type Service = { id: string; name: string; duration_minutes: number; price_cents: number; active: boolean };
 type Professional = { id: string; name: string; active: boolean };
 type Appointment = {
@@ -28,6 +35,9 @@ export default function PainelPage() {
   const [professionalName, setProfessionalName] = useState("");
   const [message, setMessage] = useState("");
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [mercadoPagoConnected, setMercadoPagoConnected] = useState(false);
+  const [depositEnabled, setDepositEnabled] = useState(true);
+  const [depositPercent, setDepositPercent] = useState(50);
   const [loading, setLoading] = useState(true);
 
   const canUse = subscriptionStatus === "authorized";
@@ -43,7 +53,7 @@ export default function PainelPage() {
 
     const { data: businessData } = await supabase
       .from("businesses")
-      .select("id,name,slug,phone")
+      .select("id,name,slug,phone,deposit_enabled,deposit_percent")
       .limit(1)
       .maybeSingle();
 
@@ -53,8 +63,10 @@ export default function PainelPage() {
     }
 
     setBusiness(businessData);
+    setDepositEnabled(Boolean(businessData.deposit_enabled));
+    setDepositPercent(Number(businessData.deposit_percent || 50));
 
-    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse] = await Promise.all([
+    const [servicesResult, professionalsResult, subscriptionResult, appointmentsResult, googleStatusResponse, mercadoPagoStatusResponse] = await Promise.all([
       supabase.from("services").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("professionals").select("*").eq("business_id", businessData.id).order("created_at"),
       supabase.from("subscriptions").select("status").order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -70,6 +82,11 @@ export default function PainelPage() {
           Authorization: "Bearer " + sessionData.session.access_token,
         },
       }),
+      fetch("/api/mercadopago/status", {
+        headers: {
+          Authorization: "Bearer " + sessionData.session.access_token,
+        },
+      }),
     ]);
 
     setServices((servicesResult.data || []) as Service[]);
@@ -80,6 +97,11 @@ export default function PainelPage() {
     if (googleStatusResponse.ok) {
       const googleStatus = await googleStatusResponse.json();
       setGoogleConnected(Boolean(googleStatus.connected));
+    }
+
+    if (mercadoPagoStatusResponse.ok) {
+      const mercadoPagoStatus = await mercadoPagoStatusResponse.json();
+      setMercadoPagoConnected(Boolean(mercadoPagoStatus.connected));
     }
 
     setLoading(false);
@@ -171,6 +193,58 @@ export default function PainelPage() {
     window.location.href = result.authorizationUrl;
   }
 
+  async function connectMercadoPago() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/mercadopago/connect", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(
+        result.error || "Não foi possível conectar o Mercado Pago."
+      );
+      return;
+    }
+
+    window.location.href = result.authorizationUrl;
+  }
+
+  async function disconnectMercadoPago() {
+    const supabase = getSupabaseBrowser();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) return;
+
+    const response = await fetch("/api/mercadopago/disconnect", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(
+        result.error || "Não foi possível desconectar o Mercado Pago."
+      );
+      return;
+    }
+
+    setMercadoPagoConnected(false);
+  }
+
   async function disconnectGoogle() {
     const supabase = getSupabaseBrowser();
     const { data } = await supabase.auth.getSession();
@@ -193,6 +267,38 @@ export default function PainelPage() {
     }
 
     setGoogleConnected(false);
+  }
+
+  async function saveDepositSettings() {
+    if (!business) return;
+
+    if (depositEnabled && !mercadoPagoConnected) {
+      setMessage("Conecte o Mercado Pago antes de ativar o sinal Pix.");
+      return;
+    }
+
+    if (depositPercent < 10 || depositPercent > 100) {
+      setMessage("O percentual do sinal deve ficar entre 10% e 100%.");
+      return;
+    }
+
+    const supabase = getSupabaseBrowser();
+    const { error } = await supabase
+      .from("businesses")
+      .update({
+        deposit_enabled: depositEnabled,
+        deposit_percent: depositPercent,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", business.id);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Configuração do sinal Pix salva.");
+    await load();
   }
 
   async function subscribe() {
@@ -273,6 +379,78 @@ export default function PainelPage() {
                   Conectar Google Agenda
                 </button>
               )}
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="row between">
+              <div>
+                <h2>Mercado Pago do estabelecimento</h2>
+                <p>
+                  {mercadoPagoConnected
+                    ? "Conectado. Os sinais Pix dos clientes são processados na conta deste estabelecimento."
+                    : "Conecte a conta Mercado Pago do estabelecimento antes de ativar o sinal Pix."}
+                </p>
+              </div>
+              {mercadoPagoConnected ? (
+                <button
+                  className="secondary"
+                  onClick={disconnectMercadoPago}
+                >
+                  Desconectar
+                </button>
+              ) : (
+                <button className="cta" onClick={connectMercadoPago}>
+                  Conectar Mercado Pago
+                </button>
+              )}
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="row between">
+              <div>
+                <h2>Sinal via Pix</h2>
+                <p>
+                  Quando ativado, serviços com valor só são confirmados depois
+                  que o cliente paga o sinal. O horário fica reservado por 30
+                  minutos enquanto o Pix está pendente.
+                </p>
+              </div>
+            </div>
+
+            <div className="deposit-settings">
+              <label className="toggle-row">
+                <input
+                  type="checkbox"
+                  checked={depositEnabled}
+                  disabled={!mercadoPagoConnected}
+                  onChange={(e) => setDepositEnabled(e.target.checked)}
+                />
+                Exigir sinal para confirmar agendamentos pagos
+              </label>
+
+              <label>
+                Percentual do sinal
+                <div className="percent-input">
+                  <input
+                    className="input"
+                    type="number"
+                    min={10}
+                    max={100}
+                    value={depositPercent}
+                    disabled={!depositEnabled}
+                    onChange={(e) =>
+                      setDepositPercent(Number(e.target.value))
+                    }
+                  />
+                  <span>%</span>
+                </div>
+              </label>
+
+              <button className="cta" onClick={saveDepositSettings}>
+                Salvar cobrança
+              </button>
             </div>
           </section>
 

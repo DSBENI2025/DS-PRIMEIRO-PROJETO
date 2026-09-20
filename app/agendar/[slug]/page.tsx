@@ -12,7 +12,7 @@ export default async function BookingPage({
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("id,name,slug,owner_id,active")
+    .select("id,name,slug,owner_id,active,deposit_enabled,deposit_percent")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -43,7 +43,7 @@ export default async function BookingPage({
     );
   }
 
-  const [servicesResult, professionalsResult, hoursResult] = await Promise.all([
+  const [servicesResult, professionalsResult, hoursResult, mercadoPagoResult] = await Promise.all([
     supabase
       .from("services")
       .select("id,name,duration_minutes,price_cents")
@@ -61,6 +61,11 @@ export default async function BookingPage({
       .select("weekday,opens_at,closes_at,is_closed")
       .eq("business_id", business.id)
       .order("weekday"),
+    supabase
+      .from("mercadopago_integrations")
+      .select("id")
+      .eq("business_id", business.id)
+      .maybeSingle(),
   ]);
 
   const services = servicesResult.data || [];
@@ -86,6 +91,9 @@ export default async function BookingPage({
         services={services}
         professionals={professionals}
         hours={hours}
+        depositEnabled={Boolean(business.deposit_enabled)}
+        depositPercent={Number(business.deposit_percent || 50)}
+        paymentReady={Boolean(mercadoPagoResult.data)}
       />
     </main>
   );

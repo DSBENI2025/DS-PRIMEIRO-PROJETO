@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     const { data: business } = await supabase
       .from("businesses")
-      .select("id,owner_id,name,active,timezone")
+      .select("id,owner_id,name,active,timezone,deposit_enabled")
       .eq("id", businessId)
       .maybeSingle();
 
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     const [serviceResult, professionalResult] = await Promise.all([
       supabase
         .from("services")
-        .select("id,name,duration_minutes,active")
+        .select("id,name,duration_minutes,price_cents,active")
         .eq("id", serviceId)
         .eq("business_id", businessId)
         .maybeSingle(),
@@ -88,6 +88,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Serviço ou profissional indisponível." },
         { status: 400 }
+      );
+    }
+
+    if (business.deposit_enabled && service.price_cents > 0) {
+      return NextResponse.json(
+        { error: "Este horário exige pagamento do sinal via Pix." },
+        { status: 409 }
       );
     }
 
@@ -154,6 +161,23 @@ export async function POST(req: NextRequest) {
     if (conflict && conflict.length > 0) {
       return NextResponse.json(
         { error: "Esse horário acabou de ser ocupado. Escolha outro." },
+        { status: 409 }
+      );
+    }
+
+    const { data: pendingHold } = await supabase
+      .from("booking_payments")
+      .select("id")
+      .eq("professional_id", professionalId)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .lt("start_time", end.toISOString())
+      .gt("end_time", start.toISOString())
+      .limit(1);
+
+    if (pendingHold && pendingHold.length > 0) {
+      return NextResponse.json(
+        { error: "Esse horário está temporariamente reservado para pagamento." },
         { status: 409 }
       );
     }
