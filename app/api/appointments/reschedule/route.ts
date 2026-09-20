@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedBusiness } from "@/lib/auth-server";
+import { recordAppointmentEvent } from "@/lib/appointment-history";
 import {
   getEffectiveWorkingHours,
   isScheduleBlocked,
@@ -218,6 +219,26 @@ export async function POST(req: NextRequest) {
       }
 
       throw rescheduleError || new Error("Reagendamento não concluído.");
+    }
+
+    try {
+      await recordAppointmentEvent({
+        appointmentId: appointment.id,
+        businessId: auth.business.id,
+        eventType: "rescheduled",
+        actorType: auth.role,
+        actorUserId: auth.user.id,
+        metadata: {
+          oldProfessionalId,
+          newProfessionalId: professionalId,
+          oldStartTime: appointment.start_time,
+          newStartTime: start.toISOString(),
+          oldEndTime: appointment.end_time,
+          newEndTime: end.toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error("Reagendamento salvo, mas auditoria falhou", error);
     }
 
     let googleSynced = true;
