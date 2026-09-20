@@ -23,6 +23,7 @@ MVP de SaaS de agendamento para profissionais e pequenos negócios, com cobranç
 - reagendamento com revalidação completa de disponibilidade
 - autoatendimento do cliente por link seguro
 - consulta, cancelamento e reagendamento sem login
+- histórico/auditoria de criação, reagendamento, cancelamento e status
 - cancelamento de agendamento
 - cobrança recorrente via Mercado Pago
 - webhook com validação de assinatura
@@ -161,7 +162,6 @@ Os lembretes são processados pelo workflow `.github/workflows/notifications.yml
 
 ## Próximos blocos
 
-- histórico/auditoria de alterações do atendimento
 - reembolso automático quando aplicável
 - exportação de relatórios
 - plano anual
