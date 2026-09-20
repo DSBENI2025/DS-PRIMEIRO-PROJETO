@@ -1,0 +1,76 @@
+name: Bug
+description: Reportar um comportamento incorreto do Agenda Pro
+title: "[Bug] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Não inclua senhas, tokens, chaves, CPF completo ou dados sensíveis de clientes.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Resumo
+      description: O que aconteceu?
+      placeholder: Descreva o problema de forma objetiva.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: Liste os passos para reproduzir.
+      placeholder: |
+        1. Abrir...
+        2. Selecionar...
+        3. Confirmar...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado atual
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Agendamento público
+        - Painel
+        - Pix / Mercado Pago
+        - Google Agenda
+        - WhatsApp
+        - Equipe / permissões
+        - Relatórios
+        - Autoatendimento do cliente
+        - Deploy / infraestrutura
+        - Outro
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidências sem dados sensíveis
+      description: Prints, horário aproximado, IDs técnicos não secretos ou mensagens de erro sanitizadas.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Segurança
+      options:
+        - label: Confirmei que esta issue não contém credenciais ou dados pessoais sensíveis.
+          required: true
