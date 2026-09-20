@@ -74,6 +74,7 @@ export default function BookingForm({
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [manageUrl, setManageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [payment, setPayment] = useState<PixPayment | null>(null);
   const [slots, setSlots] = useState<string[]>([]);
@@ -164,7 +165,7 @@ export default function BookingForm({
   ]);
 
   useEffect(() => {
-    if (!payment?.reservationId || success) return;
+    if (!payment?.reservationId) return;
 
     const timer = window.setInterval(async () => {
       try {
@@ -180,6 +181,7 @@ export default function BookingForm({
 
         if (result.confirmed) {
           setSuccess(true);
+          setManageUrl(result.manageUrl || null);
           setPayment((current) =>
             current ? { ...current, status: "approved" } : current
           );
@@ -219,6 +221,7 @@ export default function BookingForm({
     if (payment?.status === "pending") return;
     setPayment(null);
     setSuccess(false);
+    setManageUrl(null);
     setMessage("");
     setTime("");
   }
@@ -303,6 +306,7 @@ export default function BookingForm({
 
         if (result.status === "approved") {
           setSuccess(true);
+          setManageUrl(result.manageUrl || null);
           setMessage("Pagamento aprovado. Seu agendamento está confirmado.");
         } else {
           setMessage(
@@ -311,6 +315,7 @@ export default function BookingForm({
         }
       } else {
         setSuccess(true);
+        setManageUrl(result.manageUrl || null);
         setMessage(
           "Agendamento confirmado para " +
             new Date(result.startTime).toLocaleString("pt-BR")
@@ -567,6 +572,12 @@ export default function BookingForm({
           <div className={success ? "success" : "booking-message"}>
             {message}
           </div>
+        )}
+
+        {success && manageUrl && (
+          <a className="cta manage-booking-link" href={manageUrl}>
+            Gerenciar meu agendamento
+          </a>
         )}
       </div>
     </div>
