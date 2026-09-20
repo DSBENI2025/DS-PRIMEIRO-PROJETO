@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import type { Json } from "@/supabase/database.types";
 
 export type AppointmentActor =
   | "owner"
@@ -20,7 +21,7 @@ export async function recordAppointmentEvent(args: {
   actorType: AppointmentActor;
   actorUserId?: string | null;
   eventKey?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Json;
 }) {
   const supabase = getSupabaseAdmin();
 
