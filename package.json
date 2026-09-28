@@ -11,9 +11,9 @@
     "check:sensitive-files": "node scripts/check-sensitive-files.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.116.0",
+    "@supabase/supabase-js": "2.117.2",
     "mercadopago": "3.6.1",
-    "next": "16.3.5",
+    "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
