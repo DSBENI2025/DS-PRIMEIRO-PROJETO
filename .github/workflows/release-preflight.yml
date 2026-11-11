@@ -48,7 +48,7 @@ jobs:
           node -e "new URL(process.env.AGENDA_PRO_BASE_URL); console.log('AGENDA_PRO_BASE_URL is valid.')"
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
